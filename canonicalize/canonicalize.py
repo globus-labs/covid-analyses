@@ -16,7 +16,7 @@ def prepare_files(work_dir, filename, smile, iden, header, delim, size, remove):
     2. Use awk to separate out the smile and id col.
     3. Sort -u the file to remove duplicates
     4. Remove the header line if set
-    5. Split the file into 1M line chunks
+    5. Split the file into 'size' line chunks
     6. Return the list of filenames"""
 
     preped_files = []
@@ -61,8 +61,10 @@ def prepare_files(work_dir, filename, smile, iden, header, delim, size, remove):
     print(df.shape)
     print(df.shape[0])
     print('writing output')
-    # write the file back out as 1M line chunks
-    num_files = math.ceil(df.shape[0] / size)
+    # write the file back out as size chunks
+    num_files = 1
+    if size > 0:
+        num_files = math.ceil(df.shape[0] / size)
     print(f'num files: {num_files}')
 
     for id, df_i in enumerate(np.array_split(df, num_files)):
@@ -99,16 +101,16 @@ def can_files(work_dir, to_process):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--filename", default=None,
+    parser.add_argument("-f", "--input_file", default=None, required=True,
                         help="The smile file to process")
-    parser.add_argument("-o", "--output_dir", default=None,
+    parser.add_argument("-o", "--output_dir", default=None, required=True,
                         help="The output directory to store canonicalized smiles")
     parser.add_argument("-s", "--smile_col", type=int, default=None,
                         help="The column to find the smile file in")
-    parser.add_argument("-i", "--identifier_col", type=int, default=None,
+    parser.add_argument("-id", "--identifier_col", type=int, default=None,
                         help="The column to find the identifier in. None if none exist.")
-    parser.add_argument("-n", "--size", default="500000000",
-                        help="Num smiles per file")
+    parser.add_argument("-b", "--batch_size", default="0",
+                        help="Num smiles per file. Set to 0 for all smiles in file")
     parser.add_argument("--header",  action='store_true',
                         help="Whether the file has a header that need removing")
     parser.add_argument("-d", "--delimiter", default="\t",
@@ -117,7 +119,7 @@ if __name__ == "__main__":
                         help="A string to remove from the smile column (e.g., quotes or <value>")
     args = parser.parse_args()
 
-    num_smiles = int(args.size)
+    num_smiles = int(args.batch_size)
 
     work_dir = args.output_dir
 
@@ -134,7 +136,7 @@ if __name__ == "__main__":
 
     os.chdir(work_dir)
 
-    to_process = prepare_files(work_dir, args.filename, args.smile_col, args.identifier_col,
+    to_process = prepare_files(work_dir, args.input_file, args.smile_col, args.identifier_col,
                                         args.header, args.delimiter, num_smiles, args.remove)
 
     caned_files = can_files(work_dir, to_process)
