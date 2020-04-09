@@ -40,6 +40,8 @@ $ python create_descriptors.py --input_file ~/data/test/pubchem/csv/pubchem.csv 
 
 Before moving on, lets quickly check that the descriptors have been created correctly: 
 
+
+```python
 import pickle
 p = pickle.load(open('data/test/pubchem/descriptors/pubchem-0-100.pkl', 'rb'))
 print(p)
@@ -59,7 +61,7 @@ print(p)
  'C(C(=O)COP(=O)(O)O)N': ([''],
   array([ 6.9501066,  7.141538 ,  2.       , ..., 41.       ,  5.923611 ,
           2.2916667], dtype=float32)),
-…
+```
 
 
 ## Compute fingerprints
@@ -70,6 +72,7 @@ $ python create_fingerprints.py --input_file ~/data/test/pubchem/csv/pubchem.csv
 
 We can now check that the fingerprints have been created
 
+```python
 import pickle
 p = pickle.load(open('/home/chard/data/test/pubchem/fingerprints/pubchem-0-100.pkl', 'rb'))
 print(p[:5])
@@ -87,6 +90,7 @@ print(p[:5])
 ('C(C(=O)COP(=O)(O)O)N',
  '', 
 <rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a3af0>)]
+```
 
 ## Compute images
 
@@ -94,10 +98,12 @@ Finally, we will compute 2D images of each molecule using RDKit.
 
 $ python create_images.py --input_file ~/data/test/pubchem/csv/pubchem.csv  --output_dir ~/data/test/pubchem/images/  --bad_output_dir ~/data/test/pubchem/images/missing/  --num_smiles 1000 --batch_size 100
 
-Now we will check 
+Now we will check the images by saving them as PNGs. 
 
+```python
 import pickle
 p = pickle.load(open(‘~/data/test/pubchem/images/pubchem-0-100.pkll’, 'rb'))
 
 for i in range (0,5):
     p[i][3].save('mol-%s.png' % i)
+```
