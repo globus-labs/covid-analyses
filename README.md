@@ -38,7 +38,7 @@ $ python merge-csv.py --input_dir ~/data/test/pubchem/canned/ --output_file ~/da
 
 In this part of the pipeline we will compute descriptor, fingerprints, and image features for use with other processing tools.
 
-### Molecular Descriptors 
+### Molecular descriptors 
 
 First we will use mordred to compute molecular descriptors. By default this step will create ~1800 descriptors for each molecule.  Note: we set num_smiles here to 10000 to limit computation cost, in production this should be set to 0 to do the entire dataset. We set a batch size to control parallelism. Computation for each batch will be parallelized where possible.
 
@@ -71,7 +71,7 @@ print(p)
 ```
 
 
-### Compute fingerprints
+### Molecular fingerprints
 
 Next we will compute fingerprints for each of the molecules using RDKit to create representative bit vectors. 
 
@@ -101,7 +101,7 @@ print(p[:5])
 <rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a3af0>)]
 ```
 
-### Compute images
+### 2D Molecular images
 
 Finally, we will compute 2D images of each molecule using RDKit.
 
