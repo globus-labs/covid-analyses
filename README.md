@@ -22,7 +22,7 @@ First we will convert SMILES to a canonical form using Open Babel. To simplify p
 
 $ python canonicalize.py --input_file ~/data/test/smiles/pubchem.txt --output_dir ~/data/test/pubchem/canned/ --batch_size 1000000
 
-2.  Merge CSV
+## Merge CSV
 
 In many cases, datasets are deposited as a collection of files. For later stages of the workflow it is easier to manage them from a single input file. In this stage we merge many input files into a single CSV. 
 
