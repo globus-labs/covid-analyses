@@ -18,18 +18,19 @@ def create_fingerprints(smiles, out_file, bad_file=None):
     results = []
     bad = []
     for s in smiles:
-        mol = s.split(sep)
+        #mol = s.split(sep)i
+        mol = None
         try:
-            fp = AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(mol[2]), 2, nBits=2048)
+            mol = s.split(sep)
+            fp = AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(mol[2].rstrip()), 2, nBits=2048)
+            results.append((mol[2].rstrip(), mol[1], fp))
         except:
              fp = None
              bad.append(mol)
 
-        results.append((mol[1], mol[2], fp))
-    
     with open(out_file, 'wb') as output_file:
         pickle.dump(results, output_file, protocol=pickle.HIGHEST_PROTOCOL)
-    if bad_file and len(bad) > 0: 
+    if bad_file and len(bad) > 0:
         with open(bad_file, 'wb') as b_file:
             pickle.dump(bad, b_file, protocol=pickle.HIGHEST_PROTOCOL)
     return out_file
@@ -50,6 +51,8 @@ if __name__ == "__main__":
                         help="Batch size. Default: 0")
     parser.add_argument("-n", "--num_smiles", default=0, 
                         help="Number of smiles to process (for testing)")
+    parser.add_argument("-off", "--offset", default=0, type=int,
+                        help="Offset to start numbering")
     parser.add_argument("-c", "--config", default="local",
                         help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
@@ -110,11 +113,11 @@ if __name__ == "__main__":
         batch_futures[0] = create_fingerprints(smiles, output_file, bad_file)
     else: 
         for i in range(0, len(smiles), chunksize):
-            output_file = os.path.join(output_dir, "%s-%s-%s.pkl" % (f, i, i+chunksize))
+            start_num = i + args.offset # start num for naming file
+            output_file = os.path.join(output_dir, "%s-%s-%s.pkl" % (f, start_num, start_num+chunksize))
             if bad_dir: 
-                bad_file = os.path.join(bad_dir, "%s-%s-%s.pkl" % (f, i, i+chunksize))
-            result_chunks = create_fingerprints(smiles[i:i+chunksize], output_file, bad_file)
-            batch_futures[(i,i+chunksize)] = result_chunks
+                bad_file = os.path.join(bad_dir, "%s-%s-%s.pkl" % (f, start_num, start_num+chunksize))
+            batch_futures[(i,i+chunksize)] = create_fingerprints(smiles[i:i+chunksize], output_file, bad_file)
 
     
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))

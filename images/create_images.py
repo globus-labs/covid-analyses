@@ -51,7 +51,7 @@ def smiles_to_images(smiles, out_file, bad_file=None, molSize=(128, 128), kekuli
             image = None
             bad.append(mol)
 
-        results.append((mol[0], mol[1], mol[2], image))
+        results.append((mol[0], mol[1], mol[2].rstrip(), image))
 
     with open(out_file, 'wb') as output_file:
         pickle.dump(results, output_file, protocol=pickle.HIGHEST_PROTOCOL)
@@ -77,6 +77,8 @@ if __name__ == "__main__":
                         help="Batch size. Default: 0")
     parser.add_argument("-n", "--num_smiles", default=0, 
                         help="Number of smiles to process (for testing)")
+    parser.add_argument("-off", "--offset", default=0, type=int,
+                        help="Offset to start numbering")
     parser.add_argument("-c", "--config", default="local",
                         help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
@@ -138,11 +140,11 @@ if __name__ == "__main__":
         batch_futures[0] = smiles_to_images(smiles, output_file, bad_file, mol_computed=False)
     else: 
         for i in range(0, len(smiles), chunksize):
-            output_file = os.path.join(output_dir, "%s-%s-%s.pkl" % (f, i, i+chunksize))
+            start_num = i + args.offset
+            output_file = os.path.join(output_dir, "%s-%s-%s.pkl" % (f, start_num, start_num+chunksize))
             if bad_dir: 
-                bad_file = os.path.join(bad_dir, "%s-%s-%s.pkl" % (f, i, i+chunksize))
-            result_chunks = smiles_to_images(smiles[i:i+chunksize], output_file, bad_file, mol_computed=False)
-            batch_futures[(i,i+chunksize)] = result_chunks
+                bad_file = os.path.join(bad_dir, "%s-%s-%s.pkl" % (f, start_num, start_num+chunksize))
+            batch_futures[(i,i+chunksize)] = smiles_to_images(smiles[i:i+chunksize], output_file, bad_file, mol_computed=False)
 
     
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))

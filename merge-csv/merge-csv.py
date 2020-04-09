@@ -11,10 +11,12 @@ if __name__ == "__main__":
                         help="Print Endpoint version information")
     parser.add_argument("-if", "--input_file", 
                         help="File path to the input smiles file")
-    parser.add_argument("-id", "--input_dir", default="train.csv",
+    parser.add_argument("-id", "--input_dir",
                         help="File path to the input smiles csv file")
-    parser.add_argument("-o", "--output_dir", default="outputs",
+    parser.add_argument("-od", "--output_dir", default="outputs",
                         help="Output directory. Default : outputs")
+    parser.add_argument("-of", "--output_file", default=None,
+                        help="Output file. ")
     parser.add_argument("-l", "--label", default="",
                         help="Label to include in CSV")
     args = parser.parse_args()
@@ -37,7 +39,12 @@ if __name__ == "__main__":
     
     f = Path(input_file).stem
 
-    with  open(os.path.join(args.output_dir, "%s.csv" % f), 'w') as out_csv:
+    output_file = args.output_file
+    if args.output_file is None:
+        output_file = os.path.join(args.output_dir, "%s.csv" % f) 
+   
+    print("Output file: %s" % output_file) 
+    with open(output_file, 'w') as out_csv:
         writer = csv.writer(out_csv, delimiter=",")
         
         for i in range(0, len(smiles)):
