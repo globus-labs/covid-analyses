@@ -12,21 +12,27 @@ For the following example we’ll work with the PubChem dataset that is availabl
 
 To reduce computation time let’s first unzip and take the first 10M molecules. 
 
+```
 $ gunzip smiles.pubchem.txt.gz
 
 $ Head -n 10000000 smiles.pubchem.txt >> pubchem.txt
+```
 
 ## Canonicalize smiles
 
 First we will convert SMILES to a canonical form using Open Babel. To simplify processing with latter stages we will set the batch size to 1M (resulting in 10 files).
 
+```
 $ python canonicalize.py --input_file ~/data/test/smiles/pubchem.txt --output_dir ~/data/test/pubchem/canned/ --batch_size 1000000
+```
 
 ## Merge CSV
 
 In many cases, datasets are deposited as a collection of files. For later stages of the workflow it is easier to manage them from a single input file. In this stage we merge many input files into a single CSV. 
 
+```
 $ python merge-csv.py --input_dir ~/data/test/pubchem/canned/ --output_file ~/data/test/pubchem/csv/pubchem.csv  --label PC
+```
 
 ## Compute features
 
@@ -36,10 +42,11 @@ In this part of the pipeline we will compute descriptor, fingerprints, and image
 
 First we will use mordred to compute molecular descriptors. By default this step will create ~1800 descriptors for each molecule.  Note: we set num_smiles here to 10000 to limit computation cost, in production this should be set to 0 to do the entire dataset. We set a batch size to control parallelism. Computation for each batch will be parallelized where possible.
 
+```
 $ python create_descriptors.py --input_file ~/data/test/pubchem/csv/pubchem.csv  --output_dir ~/data/test/pubchem/descriptors/  --bad_output_dir ~/data/test/pubchem/descriptors/missing/  --num_smiles 1000 --batch_size 100
+```
 
 Before moving on, lets quickly check that the descriptors have been created correctly: 
-
 
 ```python
 import pickle
@@ -68,7 +75,9 @@ print(p)
 
 Next we will compute fingerprints for each of the molecules using RDKit to create representative bit vectors. 
 
+```
 $ python create_fingerprints.py --input_file ~/data/test/pubchem/csv/pubchem.csv  --output_dir ~/data/test/pubchem/fingerprints/  --bad_output_dir ~/data/test/pubchem/fingerprints/missing/  --num_smiles 1000 --batch_size 100
+```
 
 We can now check that the fingerprints have been created
 
@@ -96,7 +105,9 @@ print(p[:5])
 
 Finally, we will compute 2D images of each molecule using RDKit.
 
+```
 $ python create_images.py --input_file ~/data/test/pubchem/csv/pubchem.csv  --output_dir ~/data/test/pubchem/images/  --bad_output_dir ~/data/test/pubchem/images/missing/  --num_smiles 1000 --batch_size 100
+```
 
 Now we will check the images by saving them as PNGs. 
 
