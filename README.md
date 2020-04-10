@@ -4,10 +4,38 @@ This repository contains a set of parallel and scalable tools for processing raw
 
 The tools use the Parsl parallel programming library to enable these processes to be run on multiple cores on a single node or across many nodes concurrently. 
 
-## Preparation
+
+## Installation
+
+The tools are written in Python and have several dependencies that can be installed from Conda. 
+
+The follow instructions outline how to set up a basic Conda environment to run these tools. 
+
+```
+conda create --name candle_py3.7 python=3.7
+
+conda install -c rdkit -c mordred-descriptor 
+mordred conda install psutil
+```
+
+The tools use Parsl to parallelize execution. To get the latest Parsl install from GitHub
+
+```
+pip install git+https://github.com/Parsl/parsl.git
+```
+
+If you're using Parsl on Theta you wll need to install psutil seperately. 
+
+```
+conda install psutil
+pip install parsl
+```
+
+# Example Workflow
 
 The following pipeline can be applied to any column-formatted input dataset. At a minimum we require a column of SMILES, the pipeline can also track an identifier for each molecule.
 
+## Preparation
 For the following example we’ll work with the PubChem dataset that is available here: https://2019-ncov.e.globus.org/databases/PubChem/smiles.pubchem.txt.gz
 
 To reduce computation time let’s first unzip and take the first 10M molecules. 
