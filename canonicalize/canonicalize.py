@@ -12,31 +12,24 @@ def prepare_files(work_dir, filename, smile, iden, header, delim, size, remove):
      we use command line tools and subprocess.
 
     This uses the following process:
-    1. Unzip the file if it is zipped.
-    2. Use awk to separate out the smile and id col.
-    3. Sort -u the file to remove duplicates
-    4. Remove the header line if set
-    5. Split the file into 'size' line chunks
-    6. Return the list of filenames"""
+    - Read the file
+    - Remove the header if specificed
+    - Remove duplicates
+    - Split the file into 'size' line chunks
+    - Return the list of filenames"""
 
     preped_files = []
     print('starting prep')
 
-    # check for compressed
-
     # load the data into pandas
-    print('reading file')
     df = pd.read_csv(filename, sep=delim, header=None)
 
     # remove the header
     if header:
         df = df[1:]
     df = df.fillna('-1')
-    #print(df[4])
 
-    print(smile)
     if smile is not None or iden is not None:
-        print('trimming')
         to_keep = pd.DataFrame()
         if iden is not None:
             try:
@@ -47,7 +40,6 @@ def prepare_files(work_dir, filename, smile, iden, header, delim, size, remove):
 
         if smile is not None:
             to_keep[smile] = df[smile]  
-        print(to_keep)
         df = to_keep
 
     print(df)
@@ -55,11 +47,9 @@ def prepare_files(work_dir, filename, smile, iden, header, delim, size, remove):
     if remove:
         df[0] = df[0].str.replace(remove, '')
     # drop duplicates
-    print('dropping dupes')
     df.drop_duplicates(subset=None, inplace=True)
 
     print(df.shape)
-    print(df.shape[0])
     print('writing output')
     # write the file back out as size chunks
     num_files = 1
