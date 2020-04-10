@@ -4,6 +4,7 @@ This script uses mordred to compute molecular descriptors.
 
 ## Running the workflow
 
+```
 Usage::
   usage: create_descriptors.py [-h] [-v VERSION] [-d] [-n NUM_SMILES] -i
                              INPUT_FILE [-bo BAD_OUTPUT_DIR] [-b BATCH_SIZE]
@@ -32,3 +33,4 @@ Usage::
   -c CONFIG, --config CONFIG
                         Parsl config defining the target compute resource to
                         use. Default: local
+```
