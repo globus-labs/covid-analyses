@@ -7,13 +7,15 @@ from pathlib import Path
 from parsl.app.app import python_app
 
 @python_app
-def compute_descript(smiles, out_file, bad_file=None):
+def compute_descript(smiles, out_file, bad_file=None, save_csv=False):
     from mordred import Calculator, descriptors
     from rdkit import Chem
     import numpy as np
     import pickle
     import csv
+
     bad = []
+    csv_results = []
     results = {}
     mol = None
 
@@ -22,31 +24,46 @@ def compute_descript(smiles, out_file, bad_file=None):
     for smile_tuple in smiles:
         s = smile_tuple.split(',')
         smile = s[2].rstrip()
-        identifier = s[1]
+        identifier = s[1].rstrip()
         
         try:
             mol = Chem.MolFromSmiles(smile)
 
             if mol is None or len(mol.GetAtoms()) > 100:
                 print("Error processing mol")
-                bad.append(smile_tuple)
+                bad.append((smile, identifier))
             else:
                 descs = calc(mol)
 
                 # Mods from Xuefeng
                 descs.fill_missing("nan")
-            
-                data = np.array(descs).flatten().astype(np.float32)
-                results[smile] = ([identifier], data)
+                
+                descriptor_array = np.array(descs).flatten().astype(np.float32)
+                if save_csv: 
+                    data = [smile, identifier] + list(descriptor_array)
+                    data = ['' if str(i) == 'nan' else i for i in data]
+                    csv_results.append(data) 
+                else: 
+                    results[smile] = ([identifier], np.array(descs).flatten().astype(np.float32))
         except:
-            bad.append(smile_tuple)
+            bad.append((smile, identifier))
 
-    with open(out_file, 'wb') as output_file:
-        pickle.dump(results, output_file, protocol=pickle.HIGHEST_PROTOCOL)
+    if save_csv: 
+        with open(out_file, 'w', newline='') as o_file:
+            writer = csv.writer(o_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+            writer.writerows(csv_results)
+        if bad_file and len(bad) > 0:
+            with open(bad_file, 'w', newline='') as b_file:
+                b_writer = csv.writer(b_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+                for b in bad:
+                    b_writer.writerow(b)
+    else:
+        with open(out_file, 'wb') as o_file:
+            pickle.dump(results, o_file, protocol=pickle.HIGHEST_PROTOCOL)
 
-    if bad_file and len(bad) > 0:
-        with open(bad_file, 'wb') as b_file:
-            pickle.dump(bad, b_file, protocol=pickle.HIGHEST_PROTOCOL)
+        if bad_file and len(bad) > 0:
+            with open(bad_file, 'wb') as b_file:
+                pickle.dump(bad, b_file, protocol=pickle.HIGHEST_PROTOCOL)
          
     return out_file
 
@@ -69,6 +86,8 @@ if __name__ == "__main__":
                         help="Output directory. Default : outputs")
     parser.add_argument("-off", "--offset", default=0, type=int,
                         help="Offset for starting processing from separate files. Default=0")
+    parser.add_argument("-csv", "--csv", default=False, action='store_true',
+                        help="Save output as CSV. Default is to save as Pickle.")
     parser.add_argument("-c", "--config", default="local",
                         help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
@@ -77,7 +96,7 @@ if __name__ == "__main__":
         from parsl.configs.htex_local import config
         from parsl.configs.htex_local import config
         config.executors[0].label = "Foo"
-        config.executors[0].max_workers = 1
+        config.executors[0].max_workers = 2
     elif args.config == "theta":
         from theta import config
     elif args.config == "comet":
@@ -95,6 +114,9 @@ if __name__ == "__main__":
     bad_file = None
     chunksize = int(args.batch_size)
 
+    save_csv = args.csv
+    extension = "csv" if save_csv else 'pkl'
+
     with open(input_file) as f:
         if int(args.num_smiles) > 0:
             smiles = f.readlines()[:int(args.num_smiles)]
@@ -110,7 +132,6 @@ if __name__ == "__main__":
     except:
         pass
 
-    chunksize = int(args.batch_size)
     num_smiles = len(smiles)
     print(f"[Main] Chunksize : {chunksize}, Smiles: {num_smiles}")
     batch_futures = {}
@@ -121,17 +142,17 @@ if __name__ == "__main__":
 
     if chunksize == 0 or chunksize > len(smiles):
         print("Processing file: %s" % input_file)
-        output_file = os.path.join(output_dir, f)
+        output_file = os.path.join(output_dir, '%s.%s' % (f, extension))
         if bad_dir:
-            bad_file = os.path.join(bad_dir, f)
-        batch_futures[0] = compute_descript(smiles, output_file, bad_file)  
+            bad_file = os.path.join(bad_dir, "%s.%s" % (f, extension))
+        batch_futures[0] = compute_descript(smiles, output_file, bad_file, save_csv)  
     else:
         for i in range(0, len(smiles), chunksize):
             start_num = i + args.offset
-            output_file = os.path.join(output_dir, "%s-%s-%s.pkl" % (f, start_num, start_num+chunksize))
+            output_file = os.path.join(output_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
             if bad_dir:
-                bad_file = os.path.join(bad_dir, "%s-%s-%s.pkl" % (f, start_num, start_num+chunksize))
-            batch_futures[(i,i+chunksize)] = compute_descript(smiles[i:i+chunksize], output_file, bad_file)
+                bad_file = os.path.join(bad_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
+            batch_futures[(i,i+chunksize)] = compute_descript(smiles[i:i+chunksize], output_file, bad_file, save_csv)
     
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))
     for i in batch_futures:

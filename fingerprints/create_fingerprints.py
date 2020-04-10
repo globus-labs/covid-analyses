@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 @python_app
-def create_fingerprints(smiles, out_file, bad_file=None, csv=False):
+def create_fingerprints(smiles, out_file, bad_file=None, save_csv=False):
     import os
     import logging
     import pickle
@@ -26,7 +26,7 @@ def create_fingerprints(smiles, out_file, bad_file=None, csv=False):
             molecule = mol[2].rstrip()
             identifier = mol[1]
             fp = AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(molecule), 2, nBits=2048)
-            if csv:
+            if save_csv:
                 results.append((molecule, identifier, fp.ToBase64())) 
             else:
                 results.append((molecule, identifier, fp))
@@ -34,7 +34,7 @@ def create_fingerprints(smiles, out_file, bad_file=None, csv=False):
              fp = None
              bad.append(mol)
 
-    if csv: 
+    if save_csv: 
         with open(out_file, 'w') as output_file:
             writer = csv.writer(output_file, delimiter=',') # quoting=csv.QUOTE_MINIMAL)
             writer.writerows(results)
@@ -95,11 +95,8 @@ if __name__ == "__main__":
     bad_file = None
     chunksize = int(args.batch_size)
 
-    csv = args.csv
-    if csv:
-        extension = "csv"
-    else:
-       extension = 'pkl'
+    save_csv = args.csv
+    extension = "csv" if save_csv else 'pkl'
 
     if not os.path.isdir(output_dir):
         try:
@@ -135,14 +132,14 @@ if __name__ == "__main__":
         output_file = os.path.join(output_dir, '%s.%s' % (f, extension))
         if bad_dir:
             bad_file = os.path.join(bad_dir, "%s.%s" % (f, extension))
-        batch_futures[0] = create_fingerprints(smiles, output_file, bad_file, csv)
+        batch_futures[0] = create_fingerprints(smiles, output_file, bad_file, save_csv)
     else: 
         for i in range(0, len(smiles), chunksize):
             start_num = i + args.offset # start num for naming file
             output_file = os.path.join(output_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
             if bad_dir: 
                 bad_file = os.path.join(bad_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
-            batch_futures[(i,i+chunksize)] = create_fingerprints(smiles[i:i+chunksize], output_file, bad_file, csv)
+            batch_futures[(i,i+chunksize)] = create_fingerprints(smiles[i:i+chunksize], output_file, bad_file, save_csv)
 
     
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))
