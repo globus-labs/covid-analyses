@@ -7,12 +7,13 @@ import time
 from pathlib import Path
 
 @python_app
-def create_fingerprints(smiles, out_file, bad_file=None):
+def create_fingerprints(smiles, out_file, bad_file=None, csv=False):
     import os
     import logging
     import pickle
     from rdkit import Chem
     from rdkit.Chem import AllChem
+    import csv
 
     sep = ","
     results = []
@@ -22,17 +23,33 @@ def create_fingerprints(smiles, out_file, bad_file=None):
         mol = None
         try:
             mol = s.split(sep)
-            fp = AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(mol[2].rstrip()), 2, nBits=2048)
-            results.append((mol[2].rstrip(), mol[1], fp))
+            molecule = mol[2].rstrip()
+            identifier = mol[1]
+            fp = AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(molecule), 2, nBits=2048)
+            if csv:
+                results.append((molecule, identifier, fp.ToBase64())) 
+            else:
+                results.append((molecule, identifier, fp))
         except:
              fp = None
              bad.append(mol)
 
-    with open(out_file, 'wb') as output_file:
-        pickle.dump(results, output_file, protocol=pickle.HIGHEST_PROTOCOL)
-    if bad_file and len(bad) > 0:
-        with open(bad_file, 'wb') as b_file:
-            pickle.dump(bad, b_file, protocol=pickle.HIGHEST_PROTOCOL)
+    if csv: 
+        with open(out_file, 'w') as output_file:
+            writer = csv.writer(output_file, delimiter=',') # quoting=csv.QUOTE_MINIMAL)
+            writer.writerows(results)
+        if bad_file and len(bad) > 0:
+            with open(bad_file, 'w') as b_file:
+                b_writer = csv.writer(b_file, delimiter=',') # quoting=csv.QUOTE_MINIMAL)
+                b_writer.writerows(bad)
+    else:
+        with open(out_file, 'wb') as output_file:
+            pickle.dump(results, output_file, protocol=pickle.HIGHEST_PROTOCOL)
+    
+        if bad_file and len(bad) > 0:
+            with open(bad_file, 'wb') as b_file:
+                pickle.dump(bad, b_file, protocol=pickle.HIGHEST_PROTOCOL)
+
     return out_file
 
 
@@ -53,6 +70,8 @@ if __name__ == "__main__":
                         help="Number of smiles to process (for testing)")
     parser.add_argument("-off", "--offset", default=0, type=int,
                         help="Offset to start numbering")
+    parser.add_argument("-csv", "--csv", default=False, action='store_true',
+                        help="Save output as CSV. Default is to save as Pickle.")
     parser.add_argument("-c", "--config", default="local",
                         help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
@@ -75,6 +94,12 @@ if __name__ == "__main__":
     bad_dir = args.bad_output_dir
     bad_file = None
     chunksize = int(args.batch_size)
+
+    csv = args.csv
+    if csv:
+        extension = "csv"
+    else:
+       extension = 'pkl'
 
     if not os.path.isdir(output_dir):
         try:
@@ -107,17 +132,17 @@ if __name__ == "__main__":
     batch_futures = {}
     if chunksize == 0 or chunksize > len(smiles):
         print("Processing file: %s" % input_file)
-        output_file = os.path.join(output_dir, '%s.pkl' % f)
+        output_file = os.path.join(output_dir, '%s.%s' % (f, extension))
         if bad_dir:
-            bad_file = os.path.join(bad_dir, f)
-        batch_futures[0] = create_fingerprints(smiles, output_file, bad_file)
+            bad_file = os.path.join(bad_dir, "%s.%s" % (f, extension))
+        batch_futures[0] = create_fingerprints(smiles, output_file, bad_file, csv)
     else: 
         for i in range(0, len(smiles), chunksize):
             start_num = i + args.offset # start num for naming file
-            output_file = os.path.join(output_dir, "%s-%s-%s.pkl" % (f, start_num, start_num+chunksize))
+            output_file = os.path.join(output_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
             if bad_dir: 
-                bad_file = os.path.join(bad_dir, "%s-%s-%s.pkl" % (f, start_num, start_num+chunksize))
-            batch_futures[(i,i+chunksize)] = create_fingerprints(smiles[i:i+chunksize], output_file, bad_file)
+                bad_file = os.path.join(bad_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
+            batch_futures[(i,i+chunksize)] = create_fingerprints(smiles[i:i+chunksize], output_file, bad_file, csv)
 
     
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))
