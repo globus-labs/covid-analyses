@@ -1,4 +1,4 @@
-# covid-analyses
+# Molecular Feature Extraction Tools
 
 This repository contains a set of parallel and scalable tools for processing raw molecule data and producing a set of features for use in machine learning pipelines. Specifically, the tools can be used together in a pipeline to convert molecule SMILES into canonicalized SMILES and compute molecular fingerprints, descriptors, and images. 
 
