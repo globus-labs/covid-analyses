@@ -5,9 +5,9 @@ The tool can be configured to select a particular column to be used for SMILES a
 identifiers. 
 
 ## Example 
-The script can be run as follows to convert a tab-separated input file into a collection of files with 1M SMILES in the output directory.
+The script can be run as follows to convert a tab-separated input file into one or more files with canonical SMILES in the output directory.
 ```
-$ python canonicalize.py --input_file <input_file> --output_dir <output_dir> --batch_size 1000000
+$ python canonicalize.py --input_file <input_file> --output_dir <output_dir>
 ```
 
 ## Usage
