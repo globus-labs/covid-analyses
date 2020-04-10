@@ -18,6 +18,7 @@ $ python create_images.py --input_file <INPUT_FILE>  --output_dir <OUTPUT_DIRECT
 
 # Usage
 
+```
 usage: create_images.py [-h] [-d] [-i INPUT_FILE] [-o OUTPUT_DIR]
                         [-bo BAD_OUTPUT_DIR] [-b BATCH_SIZE] [-n NUM_SMILES]
                         [-off OFFSET] [-c CONFIG]
@@ -40,3 +41,4 @@ optional arguments:
   -c CONFIG, --config CONFIG
                         Parsl config defining the target compute resource to
                         use. Default: local
+```
