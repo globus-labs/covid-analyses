@@ -51,7 +51,7 @@ $ Head -n 10000000 smiles.pubchem.txt >> pubchem.txt
 First we will convert SMILES to a canonical form using Open Babel. To simplify processing with latter stages we will set the batch size to 1M (resulting in 10 files).
 
 ```
-$ python canonicalize.py --input_file ~/data/test/smiles/pubchem.txt --output_dir ~/data/test/pubchem/canned/ --batch_size 1000000
+$ python canonicalize.py --input_file /data/smiles/pubchem.txt --output_dir /data/pubchem/canned/ --batch_size 1000000
 ```
 
 ## Merge CSV
@@ -59,7 +59,7 @@ $ python canonicalize.py --input_file ~/data/test/smiles/pubchem.txt --output_di
 In many cases, datasets are deposited as a collection of files. For later stages of the workflow it is easier to manage them from a single input file. In this stage we merge many input files into a single CSV. 
 
 ```
-$ python merge-csv.py --input_dir ~/data/test/pubchem/canned/ --output_file ~/data/test/pubchem/csv/pubchem.csv  --label PC
+$ python merge-csv.py --input_dir /data/pubchem/canned/ --output_file /data/pubchem/csv/pubchem.csv  --label PC
 ```
 
 ## Compute features
@@ -71,14 +71,14 @@ In this part of the pipeline we will compute descriptor, fingerprints, and image
 First we will use mordred to compute molecular descriptors. By default this step will create ~1800 descriptors for each molecule.  Note: we set num_smiles here to 10000 to limit computation cost, in production this should be set to 0 to do the entire dataset. We set a batch size to control parallelism. Computation for each batch will be parallelized where possible.
 
 ```
-$ python create_descriptors.py --input_file ~/data/test/pubchem/csv/pubchem.csv  --output_dir ~/data/test/pubchem/descriptors/  --bad_output_dir ~/data/test/pubchem/descriptors/missing/  --num_smiles 1000 --batch_size 100
+$ python create_descriptors.py --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/descriptors/  --bad_output_dir /data/pubchem/descriptors/missing/  --num_smiles 1000 --batch_size 100
 ```
 
 Before moving on, lets quickly check that the descriptors have been created correctly: 
 
 ```python
 import pickle
-p = pickle.load(open('data/test/pubchem/descriptors/pubchem-0-100.pkl', 'rb'))
+p = pickle.load(open('/data/pubchem/descriptors/pubchem-0-100.pkl', 'rb'))
 print(p)
 
 {'CC(=O)OC(CC(=O)[O-])C[N+](C)(C)C': ([''],
@@ -104,29 +104,20 @@ print(p)
 Next we will compute fingerprints for each of the molecules using RDKit to create representative bit vectors. 
 
 ```
-$ python create_fingerprints.py --input_file ~/data/test/pubchem/csv/pubchem.csv  --output_dir ~/data/test/pubchem/fingerprints/  --bad_output_dir ~/data/test/pubchem/fingerprints/missing/  --num_smiles 1000 --batch_size 100
+$ python create_fingerprints.py --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/fingerprints/  --bad_output_dir /data/pubchem/fingerprints/missing/  --num_smiles 1000 --batch_size 100
 ```
 
 We can now check that the fingerprints have been created
 
 ```python
 import pickle
-p = pickle.load(open('/home/chard/data/test/pubchem/fingerprints/pubchem-0-100.pkl', 'rb'))
+p = pickle.load(open('/data/pubchem/fingerprints/pubchem-0-100.pkl', 'rb'))
 print(p[:5])
 
-[('CC(=O)OC(CC(=O)[O-])C[N+](C)(C)C', 
-'', 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a3970>), ('CC(=O)OC(CC(=O)O)C[N+](C)(C)C', 
-'', 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a3c30>), ('C1=CC(C(C(=C1)C(=O)O)O)O', 
-'', 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a38f0>), 
-('CC(CN)O', 
-'', 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e3ca0b0>), 
-('C(C(=O)COP(=O)(O)O)N',
- '', 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a3af0>)]
+[('CC(=O)OC(CC(=O)[O-])C[N+](C)(C)C', '', <rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a3970>), 
+('CC(=O)OC(CC(=O)O)C[N+](C)(C)C', '', <rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a3c30>), ('C1=CC(C(C(=C1)C(=O)O)O)O', '', <rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a38f0>), 
+('CC(CN)O', '', <rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e3ca0b0>), 
+('C(C(=O)COP(=O)(O)O)N', '', <rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d3e7a3af0>)]
 ```
 
 ### 2D Molecular images
@@ -134,15 +125,24 @@ print(p[:5])
 Finally, we will compute 2D images of each molecule using RDKit.
 
 ```
-$ python create_images.py --input_file ~/data/test/pubchem/csv/pubchem.csv  --output_dir ~/data/test/pubchem/images/  --bad_output_dir ~/data/test/pubchem/images/missing/  --num_smiles 1000 --batch_size 100
+$ python create_images.py --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/images/  --bad_output_dir /data/pubchem/images/missing/  --num_smiles 1000 --batch_size 100
 ```
 
 Now we will check the images by saving them as PNGs. 
 
 ```python
 import pickle
-p = pickle.load(open(‘~/data/test/pubchem/images/pubchem-0-100.pkll’, 'rb'))
+p = pickle.load(open(‘/data/pubchem/images/pubchem-0-100.pkl’, 'rb'))
+
 
 for i in range (0,5):
     p[i][3].save('mol-%s.png' % i)
+    
+print(p[:5])
+
+[('PC', '', 'CC(=O)OC(CC(=O)[O-])C[N+](C)(C)C', <PIL.PngImagePlugin.PngImageFile image mode=RGB size=128x128 at 0x7F7E1D5259D0>), 
+('PC', '', 'CC(=O)OC(CC(=O)O)C[N+](C)(C)C', <PIL.PngImagePlugin.PngImageFile image mode=RGB size=128x128 at 0x7F7E1D4B8810>), 
+('PC', '', 'C1=CC(C(C(=C1)C(=O)O)O)O', <PIL.PngImagePlugin.PngImageFile image mode=RGB size=128x128 at 0x7F7E1D058E90>), 
+('PC', '', 'CC(CN)O', <PIL.PngImagePlugin.PngImageFile image mode=RGB size=128x128 at 0x7F7E1D058F90>), 
+('PC', '', 'C(C(=O)COP(=O)(O)O)N', <PIL.PngImagePlugin.PngImageFile image mode=RGB size=128x128 at 0x7F7E1D05F090>)]
 ```
