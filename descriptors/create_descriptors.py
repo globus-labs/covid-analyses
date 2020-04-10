@@ -64,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument("-bo", "--bad_output_dir", default=None,
                         help="Output directory for bad smile list")
     parser.add_argument("-b", "--batch_size", default=0, type=int,
-                        help="Size of the batch of smiles to send to each node for processing. Default=4, should be 10K")
+                        help="Size of the batch of smiles to send to each node for processing. Batch size of 0 will process all smiles in a single batch. Default=0.")
     parser.add_argument("-o", "--output_dir", default="outputs",
                         help="Output directory. Default : outputs")
     parser.add_argument("-off", "--offset", default=0, type=int,
