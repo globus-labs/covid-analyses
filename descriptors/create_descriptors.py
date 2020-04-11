@@ -7,7 +7,7 @@ from pathlib import Path
 from parsl.app.app import python_app
 
 @python_app
-def compute_descript(smiles, out_file, bad_file=None, save_csv=False):
+def compute_descript(smiles, out_file, bad_file=None, save_csv=False, ignore_3D=False):
     from mordred import Calculator, descriptors
     from rdkit import Chem
     import numpy as np
@@ -19,7 +19,7 @@ def compute_descript(smiles, out_file, bad_file=None, save_csv=False):
     results = {}
     mol = None
 
-    calc = Calculator(descriptors, ignore_3D=False) 
+    calc = Calculator(descriptors, ignore_3D=ignore_3D)
 
     for smile_tuple in smiles:
         s = smile_tuple.split(',')
@@ -30,7 +30,6 @@ def compute_descript(smiles, out_file, bad_file=None, save_csv=False):
             mol = Chem.MolFromSmiles(smile)
 
             if mol is None or len(mol.GetAtoms()) > 100:
-                print("Error processing mol")
                 bad.append((smile, identifier))
             else:
                 descs = calc(mol)
@@ -88,6 +87,8 @@ if __name__ == "__main__":
                         help="Offset for starting processing from separate files. Default=0")
     parser.add_argument("-csv", "--csv", default=False, action='store_true',
                         help="Save output as CSV. Default is to save as Pickle.")
+    parser.add_argument("-ig", "--ignore3d", default=False, action='store_true',
+                        help="Ignore 3D descriptors. True: 1613 descriptors; False: 1826 descriptors. Default False.")
     parser.add_argument("-c", "--config", default="local",
                         help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
@@ -96,13 +97,14 @@ if __name__ == "__main__":
         from parsl.configs.htex_local import config
         from parsl.configs.htex_local import config
         config.executors[0].label = "Foo"
-        config.executors[0].max_workers = 2
+        config.executors[0].max_workers = 4
     elif args.config == "theta":
         from theta import config
     elif args.config == "comet":
         from comet import config
+    elif args.config == "cvd":
+        from configs.theta_cvd import config
 
-    # config.retries = 2
     parsl.load(config)
 
     if args.debug:
@@ -113,7 +115,7 @@ if __name__ == "__main__":
     bad_dir = args.bad_output_dir
     bad_file = None
     chunksize = int(args.batch_size)
-
+    ignore_3D = args.ignore3d
     save_csv = args.csv
     extension = "csv" if save_csv else 'pkl'
 
@@ -133,7 +135,10 @@ if __name__ == "__main__":
         pass
 
     num_smiles = len(smiles)
-    print(f"[Main] Chunksize : {chunksize}, Smiles: {num_smiles}")
+    print(f"[Main] Processing {input_file}")
+    print(f"[Main] Ignore3D: {ignore_3D}, SaveCSV: {save_csv}")
+    print(f"[Main] Chunksize: {chunksize}, Smiles: {num_smiles}")
+    print(f"[Main] Output: {output_dir}")
     batch_futures = {}
    
     f = Path(input_file).stem 
@@ -141,18 +146,17 @@ if __name__ == "__main__":
     start = time.time()
 
     if chunksize == 0 or chunksize > len(smiles):
-        print("Processing file: %s" % input_file)
         output_file = os.path.join(output_dir, '%s.%s' % (f, extension))
         if bad_dir:
             bad_file = os.path.join(bad_dir, "%s.%s" % (f, extension))
-        batch_futures[0] = compute_descript(smiles, output_file, bad_file, save_csv)  
+        batch_futures[0] = compute_descript(smiles, output_file, bad_file, save_csv, ignore_3D)
     else:
         for i in range(0, len(smiles), chunksize):
             start_num = i + args.offset
             output_file = os.path.join(output_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
             if bad_dir:
                 bad_file = os.path.join(bad_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
-            batch_futures[(i,i+chunksize)] = compute_descript(smiles[i:i+chunksize], output_file, bad_file, save_csv)
+            batch_futures[(i,i+chunksize)] = compute_descript(smiles[i:i+chunksize], output_file, bad_file, save_csv, ignore_3D)
     
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))
     for i in batch_futures:
@@ -163,4 +167,4 @@ if __name__ == "__main__":
             print(f"Exception : {e}")
             print(f"Chunk {i} failed")
 
-    print("All done! %s" % (time.time() - start))
+    print("[Main] All done! %s" % (time.time() - start))
