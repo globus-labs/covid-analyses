@@ -23,6 +23,7 @@ def smiles_to_images(smiles, out_file, bad_file=None, molSize=(128, 128), kekuli
     bad = []
     for s in smiles:
         mol = s.split(sep)
+        mc = None
         try:
             molecule = mol[2]
             if not mol_computed:
@@ -32,24 +33,25 @@ def smiles_to_images(smiles, out_file, bad_file=None, molSize=(128, 128), kekuli
             image = None
             bad.append(mol)
 
-        if kekulize:
+        if mc: 
+            if kekulize:
+                try:
+                    Chem.Kekulize(mc)
+                except:
+                    mc = Chem.Mol(molecule.ToBinary())
             try:
-                Chem.Kekulize(mc)
-            except:
-                mc = Chem.Mol(molecule.ToBinary())
-        try:
-            if not mc.GetNumConformers():
-                rdDepictor.Compute2DCoords(mc)
-            drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0], molSize[1])
-            drawer.DrawMolecule(mc)
-            drawer.FinishDrawing()
-            svg = drawer.GetDrawingText()
-            image = Image.open(io.BytesIO(cairosvg.svg2png(bytestring=svg, parent_width=100, parent_height=100,
+                if not mc.GetNumConformers():
+                    rdDepictor.Compute2DCoords(mc)
+                drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0], molSize[1])
+                drawer.DrawMolecule(mc)
+                drawer.FinishDrawing()
+                svg = drawer.GetDrawingText()
+                image = Image.open(io.BytesIO(cairosvg.svg2png(bytestring=svg, parent_width=100, parent_height=100,
                                                    scale=1)))
-            image.convert('RGB')
-        except:
-            image = None
-            bad.append(mol)
+                image.convert('RGB')
+            except:
+                image = None
+                bad.append(mol)
 
         results.append((mol[0], mol[1], mol[2].rstrip(), image))
 

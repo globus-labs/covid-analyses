@@ -7,7 +7,7 @@ from subprocess import PIPE
 import pandas as pd
 import numpy as np
 
-def prepare_files(work_dir, filename, smile, iden, header, delim, size, remove):
+def prepare_files(work_dir, filename, smile, iden, label, header, delim, size, remove, out_delim):
     """Prepare the file for can'ing. Because the files can be in excess of 100GB
      we use command line tools and subprocess.
 
@@ -39,9 +39,15 @@ def prepare_files(work_dir, filename, smile, iden, header, delim, size, remove):
                 pass
 
         if smile is not None:
-            to_keep[smile] = df[smile]  
+            to_keep[smile] = df[smile]
+        if label is not None:
+            to_keep[label] = df[label] 
         df = to_keep
-
+    print(df)
+    # Switch order of columns. OpenBabel wants SMILES first.
+    if iden and iden < smile:
+        print("Switching order of SMILES and identifier")
+        df = df[[2,1]]
     print(df)
     # remove anything we need to, e.g., quotes or </value>
     if remove:
@@ -60,7 +66,7 @@ def prepare_files(work_dir, filename, smile, iden, header, delim, size, remove):
     for id, df_i in enumerate(np.array_split(df, num_files)):
         out_file = f"{work_dir}/smiles-{id}.smi"
         print(out_file)
-        df_i.to_csv(out_file, sep="\t", index=False, header=False)
+        df_i.to_csv(out_file, sep=out_delim, index=False, header=False)
         preped_files.append(out_file)
 
     print(preped_files)
@@ -99,12 +105,16 @@ if __name__ == "__main__":
                         help="The column to find the smile file in")
     parser.add_argument("-id", "--identifier_col", type=int, default=None,
                         help="The column to find the identifier in. None if none exist.")
+    parser.add_argument("-ld", "--label_col", type=int, default=None,
+                        help="The column to find the label in. None if none exist.")
     parser.add_argument("-b", "--batch_size", default="0",
                         help="Num smiles per file. Set to 0 for all smiles in file")
     parser.add_argument("--header",  action='store_true',
                         help="Whether the file has a header that need removing")
     parser.add_argument("-d", "--delimiter", default="\t",
                         help="How smiles are separated")
+    parser.add_argument("-od", "--out_delimiter", default="\t",
+                        help="How output smiles are separated")
     parser.add_argument("-r", "--remove", default=None,
                         help="A string to remove from the smile column (e.g., quotes or <value>")
     args = parser.parse_args()
@@ -126,8 +136,8 @@ if __name__ == "__main__":
 
     os.chdir(work_dir)
 
-    to_process = prepare_files(work_dir, args.input_file, args.smile_col, args.identifier_col,
-                                        args.header, args.delimiter, num_smiles, args.remove)
+    to_process = prepare_files(work_dir, args.input_file, args.smile_col, args.identifier_col, args.label_col,
+                                        args.header, args.delimiter, num_smiles, args.remove, args.out_delimiter)
 
     caned_files = can_files(work_dir, to_process)
 
