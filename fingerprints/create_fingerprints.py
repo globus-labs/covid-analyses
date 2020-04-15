@@ -24,10 +24,11 @@ def create_fingerprints(smiles, out_file, bad_file=None, save_csv=False):
         try:
             mol = s.split(sep)
             molecule = mol[2].rstrip()
-            identifier = mol[1]
+            identifier = mol[1].rstrip()
+            dataset = mol[0].rstrip()
             fp = AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(molecule), 2, nBits=2048)
             if save_csv:
-                results.append((molecule, identifier, fp.ToBase64())) 
+                results.append((dataset, identifier, molecule, fp.ToBase64())) 
             else:
                 results.append((molecule, identifier, fp))
         except:
