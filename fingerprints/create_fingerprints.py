@@ -6,14 +6,38 @@ import re
 import time
 from pathlib import Path
 
+
+def generate_batch(filename, start=0, batchsize=10, max_batches=10):
+
+    counter = 0
+    if max_batches == 0:
+        max_batches = 999999999
+
+    with open(filename) as current:
+
+        while current and counter < max_batches:
+            yield current.tell()
+            counter += 1
+
+            for i in range(batchsize):
+                x = current.readline()
+                if not x:
+                    current = None
+                    break
 @python_app
-def create_fingerprints(smiles, out_file, bad_file=None, save_csv=False):
+def create_fingerprints(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv=False):
     import os
     import logging
     import pickle
     from rdkit import Chem
     from rdkit.Chem import AllChem
     import csv
+
+
+    if smiles_file: 
+        with open(smiles_file) as current:
+            current.seek(start_index)
+            smiles = [current.readline() for i in range(batch_size)]
 
     sep = ","
     results = []
@@ -53,6 +77,12 @@ def create_fingerprints(smiles, out_file, bad_file=None, save_csv=False):
 
     return out_file
 
+def create_file_names(name, start, finish, bad_dir, extension):
+     output_file = os.path.join(output_dir, "%s-%s-%s.%s" % (name, start, finish, extension))
+     bad_file = None
+     if bad_dir:
+         bad_file = os.path.join(bad_dir, "%s-%s-%s.%s" % (name, start, finish, extension))
+     return (output_file, bad_file)
 
 if __name__ == "__main__":
 
@@ -73,6 +103,8 @@ if __name__ == "__main__":
                         help="Offset to start numbering")
     parser.add_argument("-csv", "--csv", default=False, action='store_true',
                         help="Save output as CSV. Default is to save as Pickle.")
+    parser.add_argument("-wr", "--worker_read", default=False, action='store_true',
+                        help="Read smiles file on worker. Default: False.")
     parser.add_argument("-c", "--config", default="local",
                         help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
@@ -97,6 +129,8 @@ if __name__ == "__main__":
     chunksize = int(args.batch_size)
 
     save_csv = args.csv
+    worker_read = args.worker_read
+
     extension = "csv" if save_csv else 'pkl'
 
     if not os.path.isdir(output_dir):
@@ -116,33 +150,38 @@ if __name__ == "__main__":
 
     start = time.time()
     batch_futures = {}
-    # Process each file in the dataset
-    #for f in os.listdir(input_dir):i
-
-    #input_file = os.path.join(input_dir, f)
-    with open(input_file) as ff:
-        if int(args.num_smiles) > 0:
-            smiles = ff.readlines()[:int(args.num_smiles)]
-        else:
-            smiles = ff.readlines()
 
     f = Path(input_file).stem
-    batch_futures = {}
-    if chunksize == 0 or chunksize > len(smiles):
-        print("Processing file: %s" % input_file)
-        output_file = os.path.join(output_dir, '%s.%s' % (f, extension))
-        if bad_dir:
-            bad_file = os.path.join(bad_dir, "%s.%s" % (f, extension))
-        batch_futures[0] = create_fingerprints(smiles, output_file, bad_file, save_csv)
-    else: 
-        for i in range(0, len(smiles), chunksize):
-            start_num = i + args.offset # start num for naming file
-            output_file = os.path.join(output_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
-            if bad_dir: 
-                bad_file = os.path.join(bad_dir, "%s-%s-%s.%s" % (f, start_num, start_num+chunksize, extension))
-            batch_futures[(i,i+chunksize)] = create_fingerprints(smiles[i:i+chunksize], output_file, bad_file, save_csv)
 
-    
+    if worker_read:
+        batch_generator = generate_batch(input_file, start=0, batchsize=int(args.batch_size), max_batches=0)
+        i = 0
+        for batch_index in batch_generator:
+             print("starting batch index: %s %s %s" % (batch_index, i, chunksize))
+             output_file, bad_file = create_file_names(f, i, i+chunksize, bad_dir, extension)
+
+             batch_futures[(i,i+chunksize)] = create_fingerprints(smiles_file=input_file, start_index=batch_index, 
+                                                      batch_size=int(args.batch_size), out_file=output_file, bad_file=bad_file, save_csv=save_csv)
+
+             i += chunksize
+    else:
+        # Read in all the smiles
+        with open(input_file) as ff:
+            if int(args.num_smiles) > 0:
+                smiles = ff.readlines()[:int(args.num_smiles)]           
+            else: 
+                smiles = ff.readlines()
+        if chunksize == 0 or chunksize > len(smiles):
+            print("Processing file: %s" % input_file)
+            output_file, bad_file = create_file_names(f, 0, len(smiles), bad_dir, extension) 
+            batch_futures[0] = create_fingerprints(smiles=smiles, out_file=output_file, bad_file=bad_file, save_csv=save_csv)
+        else:
+            for i in range(0, len(smiles), chunksize):
+                start_num = i + args.offset # start num for naming file
+                output_file, bad_file = create_file_names(f, start_num, start_num+chunksize, bad_dir, extension)
+                batch_futures[(i,i+chunksize)] = create_fingerprints(smiles=smiles[i:i+chunksize], out_file=output_file, bad_file=bad_file, save_csv=save_csv)
+
+ 
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))
     for i in batch_futures:
         try:
