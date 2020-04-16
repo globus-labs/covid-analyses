@@ -77,7 +77,7 @@ def create_fingerprints(smiles=None, smiles_file=None, start_index=0, batch_size
 
     return out_file
 
-def create_file_names(name, start, finish, bad_dir, extension):
+def create_file_names(output_dir, name, start, finish, bad_dir, extension):
      output_file = os.path.join(output_dir, "%s-%s-%s.%s" % (name, start, finish, extension))
      bad_file = None
      if bad_dir:
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         i = 0
         for batch_index in batch_generator:
              print("starting batch index: %s %s %s" % (batch_index, i, chunksize))
-             output_file, bad_file = create_file_names(f, i, i+chunksize, bad_dir, extension)
+             output_file, bad_file = create_file_names(output_dir, f, i, i+chunksize, bad_dir, extension)
 
              batch_futures[(i,i+chunksize)] = create_fingerprints(smiles_file=input_file, start_index=batch_index, 
                                                       batch_size=int(args.batch_size), out_file=output_file, bad_file=bad_file, save_csv=save_csv)
@@ -173,12 +173,12 @@ if __name__ == "__main__":
                 smiles = ff.readlines()
         if chunksize == 0 or chunksize > len(smiles):
             print("Processing file: %s" % input_file)
-            output_file, bad_file = create_file_names(f, 0, len(smiles), bad_dir, extension) 
+            output_file, bad_file = create_file_names(output_dir, f, 0, len(smiles), bad_dir, extension) 
             batch_futures[0] = create_fingerprints(smiles=smiles, out_file=output_file, bad_file=bad_file, save_csv=save_csv)
         else:
             for i in range(0, len(smiles), chunksize):
                 start_num = i + args.offset # start num for naming file
-                output_file, bad_file = create_file_names(f, start_num, start_num+chunksize, bad_dir, extension)
+                output_file, bad_file = create_file_names(output_dir, f, start_num, start_num+chunksize, bad_dir, extension)
                 batch_futures[(i,i+chunksize)] = create_fingerprints(smiles=smiles[i:i+chunksize], out_file=output_file, bad_file=bad_file, save_csv=save_csv)
 
  
