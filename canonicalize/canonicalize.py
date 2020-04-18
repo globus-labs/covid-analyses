@@ -31,15 +31,14 @@ def prepare_files(work_dir, filename, smile, iden, label, header, delim, size, r
 
     if smile is not None or iden is not None:
         to_keep = pd.DataFrame()
+        if smile is not None:
+            to_keep[smile] = df[smile]
         if iden is not None:
             try:
                 # remove .0 from int ids
                 to_keep[iden] = df[iden].astype(np.int64)
             except:
                 pass
-
-        if smile is not None:
-            to_keep[smile] = df[smile]
         if label is not None:
             to_keep[label] = df[label] 
         df = to_keep
