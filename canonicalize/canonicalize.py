@@ -38,15 +38,10 @@ def prepare_files(work_dir, filename, smile, iden, label, header, delim, size, r
                 # remove .0 from int ids
                 to_keep[iden] = df[iden].astype(np.int64)
             except:
-                pass
+                to_keep[iden] = df[iden]
         if label is not None:
             to_keep[label] = df[label] 
         df = to_keep
-    print(df)
-    # Switch order of columns. OpenBabel wants SMILES first.
-    #if iden and iden < smile:
-    #    print("Switching order of SMILES and identifier")
-    #    df = df[[2,1]]
     print(df)
     # remove anything we need to, e.g., quotes or </value>
     if remove:
