@@ -44,9 +44,9 @@ def prepare_files(work_dir, filename, smile, iden, label, header, delim, size, r
         df = to_keep
     print(df)
     # Switch order of columns. OpenBabel wants SMILES first.
-    if iden and iden < smile:
-        print("Switching order of SMILES and identifier")
-        df = df[[2,1]]
+    #if iden and iden < smile:
+    #    print("Switching order of SMILES and identifier")
+    #    df = df[[2,1]]
     print(df)
     # remove anything we need to, e.g., quotes or </value>
     if remove:
