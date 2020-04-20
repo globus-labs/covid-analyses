@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 @python_app
-def compute_images(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv =False, molSize=(128, 128), kekulize=True, mol_name='', mol_computed=False):
+def compute_images(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv=False,  overwrite=False, save_gzip=False, molSize=(128, 128), kekulize=True, mol_name='', mol_computed=False):
     from rdkit import Chem
     from PIL import Image, ImageDraw, ImageFont
     import io
@@ -17,7 +17,11 @@ def compute_images(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
     from rdkit.Chem.Draw import rdMolDraw2D
     from rdkit.Chem import RDConfig
     import pickle
+    import os
+    import gzip
 
+    if not overwrite and  os.path.exists(out_file):
+         raise Exception("File exists: %s" % out_file)
 
     if smiles_file:
         with open(smiles_file) as current:
@@ -57,13 +61,21 @@ def compute_images(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
             except:
                 image = None
                 bad.append(mol)
+        # only save the result if we have an image
+        if image: 
+            results.append((mol[0], mol[1], mol[2].rstrip(), image))
+    
+    if save_gzip: 
+         with gzip.open(out_file, 'wb') as output_file:
+             pickle.dump(results, output_file, protocol=pickle.HIGHEST_PROTOCOL)
+         if bad_file and len(bad) > 0:
+             with gzip.open(bad_file, 'wb') as b_file:
+                 pickle.dump(bad, b_file, protocol=pickle.HIGHEST_PROTOCOL)
+    else:
+        with open(out_file, 'wb') as output_file:
+            pickle.dump(results, output_file, protocol=pickle.HIGHEST_PROTOCOL)
 
-        results.append((mol[0], mol[1], mol[2].rstrip(), image))
-
-    with open(out_file, 'wb') as output_file:
-        pickle.dump(results, output_file, protocol=pickle.HIGHEST_PROTOCOL)
-
-    if bad_file and len(bad) > 0: 
-        with open(bad_file, 'wb') as b_file:
-            pickle.dump(bad, b_file, protocol=pickle.HIGHEST_PROTOCOL)
+        if bad_file and len(bad) > 0: 
+            with open(bad_file, 'wb') as b_file:
+                pickle.dump(bad, b_file, protocol=pickle.HIGHEST_PROTOCOL)
     return out_file

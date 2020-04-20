@@ -53,6 +53,8 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--num_smiles", default=0, help="Number of smiles to process (for testing)")
     parser.add_argument("-ig", "--ignore3d", default=False, action='store_true', help="Ignore 3D descriptors. True: 1613 descriptors; False: 1826 descriptors. Default False.")
     parser.add_argument("-csv", "--csv", default=False, action='store_true',  help="Save output as CSV. Default is to save as Pickle.")
+    parser.add_argument("-gz", "--gzip", default=False, action='store_true',  help="Gzip output files. Default False.")
+    parser.add_argument("-ow", "--overwrite", default=False, action='store_true',  help="Overwrite output files. Default False.")
     parser.add_argument("-wr", "--worker_read", default=False, action='store_true', help="Read smiles file on worker. Default: False.")
     parser.add_argument("-c", "--config", default="local", help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
@@ -77,11 +79,14 @@ if __name__ == "__main__":
     batch_size = int(args.batch_size)
     num_smiles = int(args.num_smiles)
     save_csv = args.csv
+    save_gzip = args.gzip
+    overwrite = args.overwrite
     worker_read = args.worker_read
     compute_type = args.type
 
     extension = "csv" if save_csv else 'pkl'
-    
+    extension = "gz" if save_gzip else extension
+
     extra_args = {}   
     if compute_type.startswith('fingerprint'):
         process_function = compute_fingerprints
@@ -104,6 +109,7 @@ if __name__ == "__main__":
     print(f"[Main] Computing {compute_type}") 
     print(f"[Main] Processing {input_file}")
     print(f"[Main] SaveCSV: {save_csv}, WorkerRead: {worker_read}")
+    print(f"[Main] Gzip: {save_gzip}, Overwrite: {overwrite}")
     print(f"[Main] BatchSize: {batch_size}, Smiles: {num_smiles}")
     print(f"[Main] Output: {output_dir}")
 
@@ -127,7 +133,8 @@ if __name__ == "__main__":
              output_file, bad_file = create_file_names(output_dir, f, i, i+batch_size, bad_dir, extension)
 
              batch_futures[(i,i+batch_size)] = process_function(smiles_file=input_file, start_index=batch_index, 
-                                                      batch_size=batch_size, out_file=output_file, bad_file=bad_file, save_csv=save_csv, **extra_args)
+                                                      batch_size=batch_size, out_file=output_file, bad_file=bad_file, 
+                                                      save_csv=save_csv, overwrite=overwrite, save_gzip=save_gzip, **extra_args)
 
              i += batch_size
     else:
@@ -141,12 +148,14 @@ if __name__ == "__main__":
         if batch_size == 0 or batch_size > len(smiles):
             print("Processing file: %s" % input_file)
             output_file, bad_file = create_file_names(output_dir, f, 0, len(smiles), bad_dir, extension) 
-            batch_futures[0] = process_function(smiles=smiles, out_file=output_file, bad_file=bad_file, save_csv=save_csv, **extra_args)
+            batch_futures[0] = process_function(smiles=smiles, out_file=output_file, bad_file=bad_file, save_csv=save_csv, 
+                                                overwrite=overwrite, save_gzip=save_gzip, **extra_args)
         else:
             print("Processing %s batches" % (math.ceil(len(smiles)/batch_size)))
             for i in range(0, len(smiles), batch_size):
                 output_file, bad_file = create_file_names(output_dir, f, i, i+batch_size, bad_dir, extension)
-                batch_futures[(i,i+batch_size)] = process_function(smiles=smiles[i:i+batch_size], out_file=output_file, bad_file=bad_file, save_csv=save_csv, **extra_args)
+                batch_futures[(i,i+batch_size)] = process_function(smiles=smiles[i:i+batch_size], out_file=output_file, bad_file=bad_file, 
+                                                                   save_csv=save_csv, overwrite=overwrite, save_gzip=save_gzip, **extra_args)
 
  
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))
