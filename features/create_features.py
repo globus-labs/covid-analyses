@@ -8,7 +8,7 @@ import math
 from fingerprints.fingerprints import compute_fingerprints
 from images.images import compute_images
 from descriptors.descriptors import compute_descriptors
-
+from neural_fingerprints.neural_fingerprints import compute_neural_fingerprints
 
 def generate_batch(filename, start=0, batchsize=10, max_batches=10):
     counter = 0
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action='store_true', help="Enables debug logging")
-    parser.add_argument("-t", "--type", default=None, help="Feature type: fingerprints, descriptors, images", required=True)
+    parser.add_argument("-t", "--type", default=None, help="Feature type: fingerprints, neural_fingerprints, descriptors, images", required=True)
     parser.add_argument("-i", "--input_file", default=None, help="input directory of smiles to process")
     parser.add_argument("-o", "--output_dir", default="outputs", help="Output directory. Default : outputs")
     parser.add_argument("-bo", "--bad_output_dir", default=None, help="Output directory for bad smile list")
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     compute_type = args.type
 
     extension = "csv" if save_csv else 'pkl'
-    extension = "gz" if save_gzip else extension
+    extension = "%s.gz" % extension if save_gzip else extension
 
     extra_args = {}   
     if compute_type.startswith('fingerprint'):
@@ -98,6 +98,9 @@ if __name__ == "__main__":
     elif compute_type.startswith('descriptor'):
         process_function = compute_descriptors
         extra_arg = {"ignore_3D" : args.ignore3d}
+    elif compute_type.startswith('neural'):
+        process_function = compute_neural_fingerprints
+        extra_arg = {"model_file" : "/home/chard/NGFP/pretrained/MPro_mergedmulti_class.pkg"}
     else: 
         print("Type must be one of fingerprints, descriptors, images")
         exit()
