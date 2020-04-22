@@ -8,14 +8,21 @@ from pathlib import Path
 
 
 @python_app
-def compute_fingerprints(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv=False):
+def compute_fingerprints(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv=False,  overwrite=False, save_gzip=False):
     import os
     import logging
     import pickle
     from rdkit import Chem
     from rdkit.Chem import AllChem
     import csv
+    import os
+    import gzip
 
+    if save_gzip: 
+        raise Exception("GZip not supported yet")
+ 
+    if not overwrite and  os.path.exists(out_file):
+        raise Exception("File exists: %s" % out_file)
 
     if smiles_file: 
         with open(smiles_file) as current:

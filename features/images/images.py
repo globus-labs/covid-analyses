@@ -34,7 +34,7 @@ def compute_images(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
         mol = s.split(sep)
         mc = None
         try:
-            molecule = mol[2]
+            molecule = mol[2].rstrip()
             if not mol_computed:
                 molecule = Chem.MolFromSmiles(molecule)
             mc = Chem.Mol(molecule.ToBinary())
