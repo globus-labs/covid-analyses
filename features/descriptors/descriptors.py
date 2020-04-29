@@ -16,8 +16,8 @@ def compute_descriptors(smiles=None, smiles_file=None, start_index=0, batch_size
     import os
     import gzip
 
-    if save_gzip:
-        raise Exception("GZip not supported yet")
+    if save_gzip and not save_csv:
+        raise Exception("Gzip is only supported for CSV files")
 
     if not overwrite and  os.path.exists(out_file):
         raise Exception("File exists: %s" % out_file)
@@ -39,7 +39,8 @@ def compute_descriptors(smiles=None, smiles_file=None, start_index=0, batch_size
             s = smile_tuple.split(',')
             smile = s[2].rstrip()
             identifier = s[1].rstrip()
-        
+            dataset = s[0].rstrip()
+
             mol = Chem.MolFromSmiles(smile)
 
             if mol is None or len(mol.GetAtoms()) > 100:
@@ -52,7 +53,7 @@ def compute_descriptors(smiles=None, smiles_file=None, start_index=0, batch_size
                 
                 descriptor_array = np.array(descs).flatten().astype(np.float32)
                 if save_csv: 
-                    data = [smile, identifier] + list(descriptor_array)
+                    data = [dataset, identifier, smile] + list(descriptor_array)
                     data = ['' if str(i) == 'nan' else i for i in data]
                     csv_results.append(data) 
                 else: 
@@ -61,14 +62,24 @@ def compute_descriptors(smiles=None, smiles_file=None, start_index=0, batch_size
             bad.append(s)
 
     if save_csv: 
-        with open(out_file, 'w', newline='') as o_file:
-            writer = csv.writer(o_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-            writer.writerows(csv_results)
-        if bad_file and len(bad) > 0:
-            with open(bad_file, 'w', newline='') as b_file:
-                b_writer = csv.writer(b_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-                for b in bad:
-                    b_writer.writerow(b)
+        if save_gzip:
+            with gzip.open(out_file, 'wt') as o_file:
+                writer = csv.writer(o_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+                writer.writerows(csv_results)
+            if bad_file and len(bad) > 0:
+                with gzip.open(bad_file, 'wt') as b_file:
+                    b_writer = csv.writer(b_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+                    for b in bad:
+                        b_writer.writerow(b)
+        else:
+            with open(out_file, 'w', newline='') as o_file:
+                writer = csv.writer(o_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+                writer.writerows(csv_results)
+            if bad_file and len(bad) > 0:
+                with open(bad_file, 'w', newline='') as b_file:
+                    b_writer = csv.writer(b_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+                    for b in bad:
+                        b_writer.writerow(b)
     else:
         with open(out_file, 'wb') as o_file:
             pickle.dump(results, o_file, protocol=pickle.HIGHEST_PROTOCOL)

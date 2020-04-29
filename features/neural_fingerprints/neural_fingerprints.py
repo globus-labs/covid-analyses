@@ -50,27 +50,30 @@ def compute_neural_fingerprints(smiles=None, smiles_file=None, start_index=0, ba
     results = []
     
     for s in smiles:
-        mol_tuple = s.split(',')
-        dataset = mol_tuple[0].rstrip()
-        identifier = mol_tuple[1].rstrip()
-        sml = mol_tuple[2].rstrip()
+        try: 
+            mol_tuple = s.split(',')
+            dataset = mol_tuple[0].rstrip()
+            identifier = mol_tuple[1].rstrip()
+            sml = mol_tuple[2].rstrip()
        
-        good = True
-        mol = Chem.MolFromSmiles(sml)
-        if mol:
-            atoms = mol.GetAtoms()
-            for atom in atoms:
-                if atom.GetDegree() >= max_degree:
-                    bad.append(mol_tuple)
-                    good = False
-        else:
-            bad.append(mol_tuple)
-            good = False
-        if good:
-            fp = np.concatenate(net.calc_nfp([sml]))
-            #fp = net.calc_nfp([sml])
-            fp_ = ':'.join("{:.7f}".format(x) for x in fp)
-            results.append((dataset, identifier, sml, fp_))
+            good = True
+            mol = Chem.MolFromSmiles(sml)
+            if mol:
+                atoms = mol.GetAtoms()
+                for atom in atoms:
+                    if atom.GetDegree() >= max_degree:
+                        bad.append(mol_tuple)
+                        good = False
+            else:
+                bad.append(mol_tuple)
+                good = False
+            if good:
+                fp = np.concatenate(net.calc_nfp([sml]))
+                #fp = net.calc_nfp([sml])
+                fp_ = ':'.join("{:.7f}".format(x) for x in fp)
+                results.append((dataset, identifier, sml, fp_))
+        except: 
+            bad.append(s)
 
     with open(out_file, 'w') as output_file:
         writer = csv.writer(output_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
