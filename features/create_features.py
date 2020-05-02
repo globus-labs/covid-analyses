@@ -46,16 +46,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action='store_true', help="Enables debug logging")
     parser.add_argument("-t", "--type", default=None, help="Feature type: fingerprints, neural_fingerprints, descriptors, images", required=True)
-    parser.add_argument("-i", "--input_file", default=None, help="input directory of smiles to process")
-    parser.add_argument("-o", "--output_dir", default="outputs", help="Output directory. Default : outputs")
+    parser.add_argument("-i", "--input_file", default=None, help="input directory of smiles to process", required=True)
+    parser.add_argument("-o", "--output_dir", default="outputs", help="Output directory. Default : outputs", required=True)
     parser.add_argument("-bo", "--bad_output_dir", default=None, help="Output directory for bad smile list")
-    parser.add_argument("-b", "--batch_size", default=0, help="Batch size. Default: 0")
+    parser.add_argument("-b", "--batch_size", default=0, help="Batch size. Default: 0", type=int)
     parser.add_argument("-n", "--num_smiles", default=0, help="Number of smiles to process (for testing)")
-    parser.add_argument("-ig", "--ignore3d", default=False, action='store_true', help="Ignore 3D descriptors. True: 1613 descriptors; False: 1826 descriptors. Default False.")
     parser.add_argument("-csv", "--csv", default=False, action='store_true',  help="Save output as CSV. Default is to save as Pickle.")
     parser.add_argument("-gz", "--gzip", default=False, action='store_true',  help="Gzip output files. Default False.")
     parser.add_argument("-ow", "--overwrite", default=False, action='store_true',  help="Overwrite output files. Default False.")
     parser.add_argument("-wr", "--worker_read", default=False, action='store_true', help="Read smiles file on worker. Default: False.")
+    parser.add_argument("-w", "--walltime", default=0, help="Walltime limit for running a batch (in seconds). 0 is no walltime limit. Default: 0.", type=int)
+    parser.add_argument("-ig", "--ignore3d", default=False, action='store_true', help="Ignore 3D descriptors. True: 1613 descriptors; False: 1826 descriptors. Default False.")
+    parser.add_argument("-m", "--model_file", default=None,  help="Model file for neural network fingerprints. Default None.")
+
     parser.add_argument("-c", "--config", default="local", help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
 
@@ -64,7 +67,7 @@ if __name__ == "__main__":
         from parsl.configs.htex_local import config
         from parsl.configs.htex_local import config
         config.executors[0].label = "Foo"
-        config.executors[0].max_workers = 2
+        config.executors[0].max_workers = 5
     elif args.config == "theta":
         from configs.theta import config
     elif args.config == "cvd":
@@ -97,10 +100,10 @@ if __name__ == "__main__":
             exit()
     elif compute_type.startswith('descriptor'):
         process_function = compute_descriptors
-        extra_arg = {"ignore_3D" : args.ignore3d}
+        extra_args = {"ignore_3D" : args.ignore3d}
     elif compute_type.startswith('neural'):
         process_function = compute_neural_fingerprints
-        extra_arg = {"model_file" : "/home/chard/NGFP/pretrained/MPro_mergedmulti_class.pkg"}
+        extra_args = {"model_file" : args.model_file}
     else: 
         print("Type must be one of fingerprints, descriptors, images")
         exit()
@@ -109,10 +112,13 @@ if __name__ == "__main__":
         print("Must set a batch size for worker read")
         exit()
 
+    if args.walltime > 0: 
+        extra_args = {'walltime' : args.walltime}
+
     print(f"[Main] Computing {compute_type}") 
     print(f"[Main] Processing {input_file}")
-    print(f"[Main] SaveCSV: {save_csv}, WorkerRead: {worker_read}")
-    print(f"[Main] Gzip: {save_gzip}, Overwrite: {overwrite}")
+    print(f"[Main] SaveCSV: {save_csv}, Gzip: {save_gzip}")
+    print(f"[Main] WorkerRead: {worker_read}, Overwrite: {overwrite}")
     print(f"[Main] BatchSize: {batch_size}, Smiles: {num_smiles}")
     print(f"[Main] Output: {output_dir}")
 

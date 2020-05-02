@@ -6,8 +6,8 @@ import time
 from pathlib import Path
 from parsl.app.app import python_app
 
-@python_app
-def compute_descriptors(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv=False, overwrite=False, save_gzip=False, ignore_3D=False):
+@python_app()
+def compute_descriptors(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv=False, overwrite=False, save_gzip=False, walltime=None, ignore_3D=False):
     from mordred import Calculator, descriptors
     from rdkit import Chem
     import numpy as np
