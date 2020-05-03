@@ -72,6 +72,10 @@ if __name__ == "__main__":
         from configs.theta import config
     elif args.config == "cvd":
         from configs.theta_cvd import config
+    elif args.config == "frontera":
+        from configs.frontera import config
+    elif args.config == "fronteradev":
+         from configs.fronteradev import config
 
     parsl.load(config)
     
