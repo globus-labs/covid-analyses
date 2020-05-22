@@ -28,7 +28,10 @@ def compute_fingerprints(smiles=None, smiles_file=None, start_index=0, batch_siz
         with open(smiles_file) as current:
             current.seek(start_index)
             smiles = [current.readline() for i in range(batch_size)]
-
+   
+    if len(smiles) == 0: 
+        return ""
+    
     sep = ","
     results = []
     bad = []
@@ -48,7 +51,7 @@ def compute_fingerprints(smiles=None, smiles_file=None, start_index=0, batch_siz
         except:
              fp = None
              bad.append(mol)
-
+    
     if save_csv: 
         with open(out_file, 'w') as output_file:
             writer = csv.writer(output_file, delimiter=',') # quoting=csv.QUOTE_MINIMAL)
