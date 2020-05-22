@@ -9,6 +9,8 @@ from fingerprints.fingerprints import compute_fingerprints
 from images.images import compute_images
 from descriptors.descriptors import compute_descriptors
 from neural_fingerprints.neural_fingerprints import compute_neural_fingerprints
+from conformers.conformers import compute_conformers
+
 
 def generate_batch(filename, start=0, batchsize=10, max_batches=10):
     counter = 0
@@ -55,7 +57,8 @@ if __name__ == "__main__":
     parser.add_argument("-gz", "--gzip", default=False, action='store_true',  help="Gzip output files. Default False.")
     parser.add_argument("-ow", "--overwrite", default=False, action='store_true',  help="Overwrite output files. Default False.")
     parser.add_argument("-wr", "--worker_read", default=False, action='store_true', help="Read smiles file on worker. Default: False.")
-    parser.add_argument("-w", "--walltime", default=0, help="Walltime limit for running a batch (in seconds). 0 is no walltime limit. Default: 0.", type=int)
+    parser.add_argument("-to", "--timeout", default=0, help="OpenEye enantiomer timeout. 0 is no timeout limit. Default: 0.", type=int)
+    parser.add_argument("-l", "--license", default=None, help="OpenEye license file path (needed for conformers).")
     parser.add_argument("-ig", "--ignore3d", default=False, action='store_true', help="Ignore 3D descriptors. True: 1613 descriptors; False: 1826 descriptors. Default False.")
     parser.add_argument("-m", "--model_file", default=None,  help="Model file for neural network fingerprints. Default None.")
 
@@ -67,7 +70,7 @@ if __name__ == "__main__":
         from parsl.configs.htex_local import config
         from parsl.configs.htex_local import config
         config.executors[0].label = "Foo"
-        config.executors[0].max_workers = 5
+        config.executors[0].max_workers = 4
     elif args.config == "theta":
         from configs.theta import config
     elif args.config == "cvd":
@@ -108,6 +111,10 @@ if __name__ == "__main__":
     elif compute_type.startswith('neural'):
         process_function = compute_neural_fingerprints
         extra_args = {"model_file" : args.model_file}
+    elif compute_type.startswith('conformer'):
+        process_function = compute_conformers
+        extra_args = {"license": args.license, 'timeout': args.timeout}
+        extension = "oeb"
     else: 
         print("Type must be one of fingerprints, descriptors, images")
         exit()
@@ -115,9 +122,6 @@ if __name__ == "__main__":
     if worker_read and batch_size == 0:
         print("Must set a batch size for worker read")
         exit()
-
-    if args.walltime > 0: 
-        extra_args = {'walltime' : args.walltime}
 
     print(f"[Main] Computing {compute_type}") 
     print(f"[Main] Processing {input_file}")
