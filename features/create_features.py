@@ -8,8 +8,12 @@ import math
 from fingerprints.fingerprints import compute_fingerprints
 from images.images import compute_images
 from descriptors.descriptors import compute_descriptors
+from inchis.inchis import compute_inchis
 from neural_fingerprints.neural_fingerprints import compute_neural_fingerprints
-from conformers.conformers import compute_conformers
+#from conformers.conformers import compute_conformers
+from druggables.druggables import compute_druggables
+
+feature_types = "conformers, descriptors, druggables, fingerprints, images, inchis, neural_fingerprints"
 
 
 def generate_batch(filename, start=0, batchsize=10, max_batches=10):
@@ -47,7 +51,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action='store_true', help="Enables debug logging")
-    parser.add_argument("-t", "--type", default=None, help="Feature type: fingerprints, neural_fingerprints, descriptors, images", required=True)
+    parser.add_argument("-t", "--type", default=None, help="Feature type: "+feature_types, required=True)
     parser.add_argument("-i", "--input_file", default=None, help="input directory of smiles to process", required=True)
     parser.add_argument("-o", "--output_dir", default="outputs", help="Output directory. Default : outputs", required=True)
     parser.add_argument("-bo", "--bad_output_dir", default=None, help="Output directory for bad smile list")
@@ -108,15 +112,21 @@ if __name__ == "__main__":
     elif compute_type.startswith('descriptor'):
         process_function = compute_descriptors
         extra_args = {"ignore_3D" : args.ignore3d}
+    elif compute_type.startswith('inchi'):
+        process_function = compute_inchis
     elif compute_type.startswith('neural'):
         process_function = compute_neural_fingerprints
         extra_args = {"model_file" : args.model_file}
+    elif compute_type.startswith('druggable'):
+        process_function = compute_druggables
+        extra_args = {"license": args.license}
+        extension = "csv"
     elif compute_type.startswith('conformer'):
         process_function = compute_conformers
         extra_args = {"license": args.license, 'timeout': args.timeout}
         extension = "oeb"
     else: 
-        print("Type must be one of fingerprints, descriptors, images")
+        print("Type must be one of "+feature_types)
         exit()
 
     if worker_read and batch_size == 0:
@@ -162,6 +172,7 @@ if __name__ == "__main__":
             else: 
                 smiles = ff.readlines()
         
+        print("Read %d smiles" % len(smiles))
         if batch_size == 0 or batch_size > len(smiles):
             print("Processing file: %s" % input_file)
             output_file, bad_file = create_file_names(output_dir, f, 0, len(smiles), bad_dir, extension) 
