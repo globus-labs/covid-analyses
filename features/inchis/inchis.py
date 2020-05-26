@@ -6,6 +6,7 @@ import re
 import time
 from pathlib import Path
 
+debug=1
 
 @python_app
 def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv=False,  overwrite=False, save_gzip=False):
@@ -22,11 +23,11 @@ def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
 
     def compute_inchi(f, mol):
         ini = inchi.MolToInchi(Chem.MolFromSmiles(mol))
-        #f.write(' inchi %s\n'%ini)
-        #f.flush()
+        if debug>0:f.write(' inchi %s\n'%ini)
+        if debug>0:f.flush()
         inikey = inchi.InchiToInchiKey(ini)
-        #f.write(' inchikey %s\n'%inikey)
-        #f.flush()
+        if debug>0:f.write(' inchikey %s\n'%inikey)
+        if debug>0:f.flush()
         hsh = hashlib.md5(ini.encode('utf-8')).hexdigest()
         return((hsh, inikey, ini))
 
@@ -34,12 +35,12 @@ def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
         print("ALARM signal received")
         raise Exception('alarm')
 
-    #f = open("XXX.txt", "w")
+    if debug>0:f = open("YYY.txt", "w")
 
-    #f.write('COMPUTE_INCHIS XXX\n')
-    #f.flush()
-    #f.write('FILE1 %s\n'%smiles_file)
-    #f.flush()
+    if debug>0:f.write('COMPUTE_INCHIS XXX\n')
+    if debug>0:f.flush()
+    if debug>0:f.write('FILE1 %s\n'%smiles_file)
+    if debug>0:f.flush()
 
     if save_gzip: 
         raise Exception("GZip not supported yet")
@@ -48,61 +49,60 @@ def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
         raise Exception("File exists: %s" % out_file)
 
     if smiles_file: 
-        #f.write('FILE %s\n'%smiles_file)
-        #f.flush()
+        if debug>0:f.write('FILE %s\n'%smiles_file)
+        if debug>0:f.flush()
         with open(smiles_file) as current:
             current.seek(start_index)
             smiles = [current.readline() for i in range(batch_size)]
-            #f.write('SMILES %s'%smiles)
-            #f.flush()
    
-    #f.write('SMILES %d\n'%len(smiles))
-    #f.flush()
+    if debug>0:f.write('SMILES %d\n'%len(smiles))
+    if debug>0:f.flush()
 
     if len(smiles) == 0: 
         return ""
     
-    timeout = 120
+    timeout = 2
     sep = ","
     results = []
     bad = []
-    #cnt = 0
+    cnt = 0
     signal.signal(signal.SIGALRM, alarm_handler)
     for s in smiles:
-        s = s.rstrip()
-        #f.write('\nNext %d: %s\n'%(cnt,s))
-        #cnt += 1
-        #f.flush()
-        mol = s.split(sep)
+        s1 = s.rstrip()
+        if debug>0:f.write('\nNext %d: %s\n'%(cnt,s1))
+        if debug>0:cnt += 1
+        if debug>0:f.flush()
+        mol = s1.split(sep)
         if len(mol) < 3:
-            bad.append(mol+['length_error'])
+            print('Short molecule',mol)
             continue
         molecule = mol[2].rstrip()
         identifier = mol[1].rstrip()
         dataset = mol[0].rstrip()
-        #f.write(' mol = %s\n'%molecule)
-        #f.flush()
+        if debug>0:f.write(' mol = %s\n'%molecule)
+        if debug>0:f.flush()
         error = False
         error_type = 'unknown'
         signal.alarm(timeout)
         smiles_hash = hashlib.md5(molecule.encode('utf-8')).hexdigest()
-        #f.write(' smiles_hash = %s\n'%smiles_hash)
-        #f.flush()
+        if debug>0:f.write(' smiles_hash = %s\n'%smiles_hash)
+        if debug>0:f.flush()
         try:
             (ini_hash, inikey, ini) = compute_inchi(f, molecule)
-            #f.write(' success')
-            #f.flush()
+            if debug>0:f.write(' success')
+            if debug>0:f.flush()
         except Exception as e:
-            #f.write(' error: %s'%e.args)
-            #f.flush()
+            if debug>0:f.write(' error: %s'%e.args)
+            if debug>0:f.flush()
+            print('Alarm exception')
             if e.args=='alarm':
                 error_type = 'alarm'
             error = True
         signal.alarm(0)
 
         if error:
-            #f.write(' bad XXXXXX')
-            #f.flush()
+            if debug>0:f.write(' bad XXXXXX')
+            if debug>0:f.flush()
             bad.append(mol+[smiles_hash,error_type])
         elif save_csv:
             results.append((dataset, identifier, smiles_hash, ini_hash, inikey, ini)) 
