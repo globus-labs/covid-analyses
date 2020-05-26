@@ -70,7 +70,7 @@ if __name__ == "__main__":
         from parsl.configs.htex_local import config
         from parsl.configs.htex_local import config
         config.executors[0].label = "Foo"
-        config.executors[0].max_workers = 4
+        config.executors[0].max_workers = 1
     elif args.config == "theta":
         from configs.theta import config
     elif args.config == "cvd":

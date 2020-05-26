@@ -41,13 +41,13 @@ def compute_conformers(smiles=None, smiles_file=None, start_index=0, batch_size=
 
 
     def alarm_handler(signum, frame):
-        print("ALARM signal received")
+        #print("ALARM signal received")
         raise Exception()
 
-    ofs = oechem.oemolostream()
-    ofs.SetFormat(oechem.OEFormat_OEB)
-    if not ofs.open(out_file):
-        oechem.OEThrow.Fatal("Unable to open %s for writing" % out_file)
+    #ofs = oechem.oemolostream()
+    #ofs.SetFormat(oechem.OEFormat_OEB)
+    #if not ofs.open(out_file):
+    #    oechem.OEThrow.Fatal("Unable to open %s for writing" % out_file)
 
     sep = ","
     bad = []
@@ -68,8 +68,9 @@ def compute_conformers(smiles=None, smiles_file=None, start_index=0, batch_size=
     oechem.OEThrow.SetLevel(5)
 
     filt = oemolprop.OEFilter(oemolprop.OEFilterType_BlockBuster)
-    ofs.open(out_file)
+    #ofs.open(out_file)
     signal.signal(signal.SIGALRM, alarm_handler)
+    oe_results = []
     for mol in ims.GetOEMols():
         if filt(mol):
             oemols = []
@@ -79,7 +80,9 @@ def compute_conformers(smiles=None, smiles_file=None, start_index=0, batch_size=
             
             failures = 0
             for enantiomer in oeomega.OEFlipper(mol.GetActive(), 6, True):
-                if max_failures > 0 and failures > max_failures: 
+                if max_failures > 0 and failures >= max_failures: 
+                    break
+                if len(oemols) >= 10:
                     break
 
                 ret_code = None
@@ -88,6 +91,7 @@ def compute_conformers(smiles=None, smiles_file=None, start_index=0, batch_size=
                 try: 
                     enantiomer, ret_code = get_enan(omega, enantiomer)
                 except:
+                    print("Timeout %s" % out_file) 
                     failures += 1
                     error = True
                 signal.alarm(0)
@@ -98,8 +102,14 @@ def compute_conformers(smiles=None, smiles_file=None, start_index=0, batch_size=
                 #else:
                     #oechem.OEThrow.Warning("%s: %s" %
                     #    (enantiomer.GetTitle(), oeomega.OEGetOmegaError(ret_code)))
-            for res in oemols:
-                oechem.OEWriteMolecule(ofs, res)
+                oe_results.append(oemols)
+
+    ofs = oechem.oemolostream()
+    ofs.SetFormat(oechem.OEFormat_OEB)
+    ofs.open(out_file)
+    for r in oe_results: 
+        for res in r:
+            oechem.OEWriteMolecule(ofs, res)
 
     ofs.close()
  
