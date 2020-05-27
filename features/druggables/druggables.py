@@ -18,8 +18,8 @@ def compute_druggables(smiles=None, smiles_file=None, start_index=0, batch_size=
 
     os.environ['OE_LICENSE'] = license    
     
-    if save_gzip or save_csv: 
-        raise Exception("GZip and CSV not supported")
+    if save_gzip or not save_csv: 
+        raise Exception("GZip and PKL not supported")
  
     if not overwrite and  os.path.exists(out_file):
         raise Exception("File exists: %s" % out_file)
@@ -60,7 +60,7 @@ def compute_druggables(smiles=None, smiles_file=None, start_index=0, batch_size=
             results.append((mol[0], mol[1], filt(m)))
 
     with open(out_file, 'w') as output_file:
-        writer = csv.writer(output_file, delimiter=',') # quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(output_file, delimiter=',')
         writer.writerows(results)
 
     return out_file
