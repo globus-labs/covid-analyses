@@ -6,7 +6,7 @@ import re
 import time
 from pathlib import Path
 
-debug=1
+debug=0
 
 @python_app
 def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, out_file=None, bad_file=None, save_csv=False,  overwrite=False, save_gzip=False):
@@ -20,9 +20,27 @@ def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
     import gzip
     import signal
     import hashlib
+    import random
+    # According to https://github.com/rdkit/rdkit/issues/2683
+    from rdkit import RDLogger
+    RDLogger.DisableLog('rdApp.*')
 
-    def compute_inchi(f, mol):
-        ini = inchi.MolToInchi(Chem.MolFromSmiles(mol))
+    def compute_inchi(mol):
+        molfrom = Chem.MolFromSmiles(mol)
+        if molfrom==None:
+            return((None, None, None))
+        ini = inchi.MolToInchi(molfrom)
+        inikey = inchi.InchiToInchiKey(ini)
+        hsh = hashlib.md5(ini.encode('utf-8')).hexdigest()
+        return((hsh, inikey, ini))
+
+    def compute_inchi2(f, mol):
+        molfrom = Chem.MolFromSmiles(mol)
+        if molfrom==None:
+            if debug>0:f.write(' error--MolFromSmiles returns None\n')
+            if debug>0:f.flush()
+            return((None, None, None))
+        ini = inchi.MolToInchi(molfrom)
         if debug>0:f.write(' inchi %s\n'%ini)
         if debug>0:f.flush()
         inikey = inchi.InchiToInchiKey(ini)
@@ -35,7 +53,7 @@ def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
         print("ALARM signal received")
         raise Exception('alarm')
 
-    if debug>0:f = open("YYY.txt", "w")
+    if debug>0:f = open("YYY%d.txt"%random.randint(0,10000), "w")
 
     if debug>0:f.write('COMPUTE_INCHIS XXX\n')
     if debug>0:f.flush()
@@ -61,7 +79,7 @@ def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
     if len(smiles) == 0: 
         return ""
     
-    timeout = 2
+    timeout = 120
     sep = ","
     results = []
     bad = []
@@ -70,12 +88,11 @@ def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
     for s in smiles:
         s1 = s.rstrip()
         if debug>0:f.write('\nNext %d: %s\n'%(cnt,s1))
-        if debug>0:cnt += 1
+        if debug>0:cnt+=1
         if debug>0:f.flush()
         mol = s1.split(sep)
         if len(mol) < 3:
-            print('Short molecule',mol)
-            continue
+            continue # Could be 'break'?
         molecule = mol[2].rstrip()
         identifier = mol[1].rstrip()
         dataset = mol[0].rstrip()
@@ -88,21 +105,20 @@ def compute_inchis(smiles=None, smiles_file=None, start_index=0, batch_size=0, o
         if debug>0:f.write(' smiles_hash = %s\n'%smiles_hash)
         if debug>0:f.flush()
         try:
-            (ini_hash, inikey, ini) = compute_inchi(f, molecule)
-            if debug>0:f.write(' success')
+            if debug>0:(ini_hash, inikey, ini) = compute_inchi2(f, molecule)
+            if debug<1:(ini_hash, inikey, ini) = compute_inchi(molecule)
+            if debug>0:f.write(' success\n')
             if debug>0:f.flush()
         except Exception as e:
-            if debug>0:f.write(' error: %s'%e.args)
+            if debug>0:f.write(' exception: %s\n'%e.args)
             if debug>0:f.flush()
-            print('Alarm exception')
+            #print('Alarm exception')
             if e.args=='alarm':
                 error_type = 'alarm'
             error = True
         signal.alarm(0)
 
         if error:
-            if debug>0:f.write(' bad XXXXXX')
-            if debug>0:f.flush()
             bad.append(mol+[smiles_hash,error_type])
         elif save_csv:
             results.append((dataset, identifier, smiles_hash, ini_hash, inikey, ini)) 
