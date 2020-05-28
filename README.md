@@ -67,7 +67,7 @@ In this part of the pipeline we will compute descriptor, fingerprints, and image
 First we will use mordred to compute molecular descriptors. By default this step will create ~1800 descriptors for each molecule.  Note: we set num_smiles here to 10000 to limit computation cost, in production this should be set to 0 to do the entire dataset. We set a batch size to control parallelism. Computation for each batch will be parallelized where possible.
 
 ```
-$ python create_features.py --type descriptors --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/descriptors/  --bad_output_dir /data/pubchem/descriptors/missing/  --num_smiles 1000 --batch_size 100 --csv
+$ python create_features.py --type descriptors --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/descriptors/  --num_smiles 1000 --batch_size 100 --csv
 ```
 
 ### Molecular fingerprints
@@ -75,7 +75,7 @@ $ python create_features.py --type descriptors --input_file /data/pubchem/csv/pu
 Next we will compute fingerprints for each of the molecules using RDKit to create representative bit vectors. 
 
 ```
-$ python create_features.py --type fingerprints --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/fingerprints/  --bad_output_dir /data/pubchem/fingerprints/missing/  --num_smiles 1000 --batch_size 100 --csv
+$ python create_features.py --type fingerprints --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/fingerprints/  --num_smiles 1000 --batch_size 100 --csv
 ```
 
 ### 2D Molecular images
@@ -83,7 +83,7 @@ $ python create_features.py --type fingerprints --input_file /data/pubchem/csv/p
 Finally, we will compute 2D images of each molecule using RDKit.
 
 ```
-$ python create_features.py --type images  --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/images/  --bad_output_dir /data/pubchem/images/missing/  --num_smiles 1000 --batch_size 100
+$ python create_features.py --type images  --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/images/  --num_smiles 1000 --batch_size 100
 ```
 
 Images are saved in pickle files as PNGs. 
@@ -103,3 +103,27 @@ print(p[:5])
 ('PC', '', 'CC(CN)O', <PIL.PngImagePlugin.PngImageFile image mode=RGB size=128x128 at 0x7F7E1D058F90>), 
 ('PC', '', 'C(C(=O)COP(=O)(O)O)N', <PIL.PngImagePlugin.PngImageFile image mode=RGB size=128x128 at 0x7F7E1D05F090>)]
 ```
+
+### International Chemical Identifier (InChI)
+
+Next we will compute InChIs for each of the molecules using RDKit. 
+
+```
+$ python create_features.py --type inchis --input_file ~/data/pubchem/csv/pubchem.csv  --output_dir ~/data/pubchem/imchis/  --num_smiles 1000 --batch_size 100 --csv
+```
+
+### Conformers
+
+We compute conformers using OpenEye.
+
+```
+$ python create_features.py --type conformers --input_file ~/data/pubchem/csv/pubchem.csv  --output_dir ~/data/pubchem/conformers/  --num_smiles 1000 --batch_size 100 --license <PATH_TO_OE_LICENSE>
+```
+
+### Druggable
+
+Compute druggable molecules using OpenEye's BlockBuster filter.
+```
+$ python create_features.py --type druggable  --input_file ~/data/pubchem/csv/pubchem.csv  --output_dir ~/data/pubchem/conformers/  --num_smiles 1000 --batch_size 100--csv --license <PATH_TO_OE_LICENSE>
+```
+
