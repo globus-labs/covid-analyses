@@ -10,7 +10,7 @@ from images.images import compute_images
 from descriptors.descriptors import compute_descriptors
 from inchis.inchis import compute_inchis
 from neural_fingerprints.neural_fingerprints import compute_neural_fingerprints
-#from conformers.conformers import compute_conformers
+from conformers.conformers import compute_conformers
 from druggables.druggables import compute_druggables
 
 feature_types = "conformers, descriptors, druggables, fingerprints, images, inchis, neural_fingerprints"
