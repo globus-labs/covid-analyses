@@ -72,7 +72,7 @@ $ python create_features.py --type descriptors --input_file /data/pubchem/csv/pu
 
 ### Molecular fingerprints
 
-Next we will compute fingerprints for each of the molecules using RDKit to create representative bit vectors. 
+We compute fingerprints for each of the molecules using RDKit to create representative bit vectors. 
 
 ```
 $ python create_features.py --type fingerprints --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/fingerprints/  --num_smiles 1000 --batch_size 100 --csv
@@ -80,7 +80,7 @@ $ python create_features.py --type fingerprints --input_file /data/pubchem/csv/p
 
 ### 2D Molecular images
 
-Finally, we will compute 2D images of each molecule using RDKit.
+We compute 2D images of each molecule using RDKit.
 
 ```
 $ python create_features.py --type images  --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/images/  --num_smiles 1000 --batch_size 100
@@ -106,7 +106,7 @@ print(p[:5])
 
 ### International Chemical Identifier (InChI)
 
-Next we will compute InChIs for each of the molecules using RDKit. 
+We compute InChIs for each of the molecules using RDKit. 
 
 ```
 $ python create_features.py --type inchis --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/inchis/  --num_smiles 1000 --batch_size 100 --csv
@@ -122,7 +122,7 @@ $ python create_features.py --type conformers --input_file /data/pubchem/csv/pub
 
 ### Druggable
 
-Compute druggable molecules using OpenEye's BlockBuster filter.
+We compute druggable molecules using OpenEye's BlockBuster filter.
 ```
 $ python create_features.py --type druggable  --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/conformers/  --num_smiles 1000 --batch_size 100--csv --license <PATH_TO_OE_LICENSE>
 ```
