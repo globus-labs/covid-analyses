@@ -23,7 +23,7 @@ The following functions (`-t` values) are currently supported:
 * **inchi**: Computes InChI, InChiKey, etc. Has timeout.
 * **neural_fingerprint**: Details TBD.
 
-## To add another function, say `foo: 
+## To add another function, say `foo`: 
 
 1) Create directory features/foo
 2) Create file `foo/foo.py`, e.g., as a copy of inchis/inchi.py (if you want a timeout)
