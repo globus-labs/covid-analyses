@@ -109,7 +109,7 @@ print(p[:5])
 Next we will compute InChIs for each of the molecules using RDKit. 
 
 ```
-$ python create_features.py --type inchis --input_file ~/data/pubchem/csv/pubchem.csv  --output_dir ~/data/pubchem/imchis/  --num_smiles 1000 --batch_size 100 --csv
+$ python create_features.py --type inchis --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/inchis/  --num_smiles 1000 --batch_size 100 --csv
 ```
 
 ### Conformers
@@ -117,13 +117,13 @@ $ python create_features.py --type inchis --input_file ~/data/pubchem/csv/pubche
 We compute conformers using OpenEye.
 
 ```
-$ python create_features.py --type conformers --input_file ~/data/pubchem/csv/pubchem.csv  --output_dir ~/data/pubchem/conformers/  --num_smiles 1000 --batch_size 100 --license <PATH_TO_OE_LICENSE>
+$ python create_features.py --type conformers --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/conformers/  --num_smiles 1000 --batch_size 100 --license <PATH_TO_OE_LICENSE>
 ```
 
 ### Druggable
 
 Compute druggable molecules using OpenEye's BlockBuster filter.
 ```
-$ python create_features.py --type druggable  --input_file ~/data/pubchem/csv/pubchem.csv  --output_dir ~/data/pubchem/conformers/  --num_smiles 1000 --batch_size 100--csv --license <PATH_TO_OE_LICENSE>
+$ python create_features.py --type druggable  --input_file /data/pubchem/csv/pubchem.csv  --output_dir /data/pubchem/conformers/  --num_smiles 1000 --batch_size 100--csv --license <PATH_TO_OE_LICENSE>
 ```
 
