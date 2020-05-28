@@ -53,22 +53,21 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--debug", action='store_true', help="Enables debug logging")
     parser.add_argument("-t", "--type", default=None, help="Feature type: "+feature_types, required=True)
     parser.add_argument("-i", "--input_file", default=None, help="input directory of smiles to process", required=True)
-    parser.add_argument("-o", "--output_dir", default="outputs", help="Output directory. Default : outputs", required=True)
+    parser.add_argument("-o", "--output_dir", default="outputs", help="Output directory. Default: outputs", required=True)
     parser.add_argument("-bo", "--bad_output_dir", default=None, help="Output directory for bad smile list")
     parser.add_argument("-b", "--batch_size", default=0, help="Batch size. Default: 0", type=int)
     parser.add_argument("-n", "--num_smiles", default=0, help="Number of smiles to process (for testing)")
-    parser.add_argument("-csv", "--csv", default=False, action='store_true',  help="Save output as CSV. Default is to save as Pickle.")
+    parser.add_argument("-csv", "--csv", default=False, action='store_true',  help="Save output as CSV. Default: save as Pickle.")
     parser.add_argument("-gz", "--gzip", default=False, action='store_true',  help="Gzip output files. Default False.")
     parser.add_argument("-ow", "--overwrite", default=False, action='store_true',  help="Overwrite output files. Default False.")
     parser.add_argument("-wr", "--worker_read", default=False, action='store_true', help="Read smiles file on worker. Default: False.")
-    parser.add_argument("-to", "--timeout", default=0, help="OpenEye enantiomer timeout. 0 is no timeout limit. Default: 0.", type=int)
+    parser.add_argument("-to", "--timeout", default=0, help="Timeout for functions that take one. 0 is no timeout limit. Default: 0.", type=int)
     parser.add_argument("-l", "--license", default=None, help="OpenEye license file path (needed for conformers).")
     parser.add_argument("-ig", "--ignore3d", default=False, action='store_true', help="Ignore 3D descriptors. True: 1613 descriptors; False: 1826 descriptors. Default False.")
     parser.add_argument("-m", "--model_file", default=None,  help="Model file for neural network fingerprints. Default None.")
 
     parser.add_argument("-c", "--config", default="local", help="Parsl config defining the target compute resource to use. Default: local")
     args = parser.parse_args()
-
  
     if args.config == "local":
         from parsl.configs.htex_local import config
@@ -114,13 +113,13 @@ if __name__ == "__main__":
         extra_args = {"ignore_3D" : args.ignore3d}
     elif compute_type.startswith('inchi'):
         process_function = compute_inchis
+        extra_args = {'timeout': args.timeout}
     elif compute_type.startswith('neural'):
         process_function = compute_neural_fingerprints
         extra_args = {"model_file" : args.model_file}
     elif compute_type.startswith('druggable'):
         process_function = compute_druggables
         extra_args = {"license": args.license}
-        extension = "csv"
     elif compute_type.startswith('conformer'):
         process_function = compute_conformers
         extra_args = {"license": args.license, 'timeout': args.timeout}
@@ -184,7 +183,6 @@ if __name__ == "__main__":
                 output_file, bad_file = create_file_names(output_dir, f, i, i+batch_size, bad_dir, extension)
                 batch_futures[(i,i+batch_size)] = process_function(smiles=smiles[i:i+batch_size], out_file=output_file, bad_file=bad_file, 
                                                                    save_csv=save_csv, overwrite=overwrite, save_gzip=save_gzip, **extra_args)
-
  
     print("[Main] Waiting for {} futures...".format(len(batch_futures)))
     for i in batch_futures:
@@ -196,7 +194,3 @@ if __name__ == "__main__":
             print(f"Chunk {i} failed")
 
     print("All done! %s" % (time.time() - start))
-    
-
-
-

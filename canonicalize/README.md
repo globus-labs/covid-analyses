@@ -36,3 +36,13 @@ optional arguments:
                         A string to remove from the smile column (e.g., quotes
                         or <value>
 ```
+
+# Scaling canonicalization with Parsl
+This script supports to canicalize using several nodes. It takes CSV smiles as input, and outputs canonical smiles in CSV format.
+
+
+## Example
+The script can be run as follows. It generates canonical smiles in the parent directory of input csv file, with prefix `new_can_`.
+```
+$ python scale-canning.py -i <input_csv_file> -c theta
+```
