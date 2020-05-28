@@ -25,8 +25,9 @@ The following functions (`-t` values) are currently supported:
 
 ## To add another function, say `foo`: 
 
-1) Create directory features/foo
-2) Create file `foo/foo.py`, e.g., as a copy of inchis/inchi.py (if you want a timeout)
-3) Rename the function `compute_inchi' within your new `foo/foo.py` to `compute_foo`.
-4) Rename the function `compute_one_inchi` within your new foo/foo.py to `compute_one_foo`, and update it to perform whatever function you want to apply to each molecule. 
-5) Add code to `create_features.py` to load the new module, `foo/foo.py`, and call `compute_foo`. You're done.
+1) Create directory `features/foo`
+2) Create file `foo/foo.py`, e.g., as a copy of `inchis/inchi.py` (if you want a timeout)
+3) Rename the function `compute_inchi` within your new `foo/foo.py` to `compute_foo`.
+4) Rename the function `compute_one_inchi` within your new `foo/foo.py` to `compute_one_foo`, and update it to perform whatever function you want to apply to each molecule. 
+5) Add code to `create_features.py` to load the new module, `foo/foo.py`, recognize `-t foo` as an option, and call `compute_foo`. 
+6) Now you can run `python create_features.py -t foo ...`
